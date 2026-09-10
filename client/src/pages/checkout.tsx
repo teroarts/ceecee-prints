@@ -15,7 +15,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatPrice, useCart } from "@/lib/cart";
 
 const checkoutSchema = z.object({
@@ -62,6 +62,9 @@ export default function Checkout() {
       return (await res.json()) as { orderNumber: string };
     },
     onSuccess: (order) => {
+      // Seed the cache so the confirmation page renders from this response
+      // instead of refetching — serverless instances don't share state.
+      queryClient.setQueryData(["/api/orders", order.orderNumber], order);
       clear();
       navigate(`/order/${order.orderNumber}`);
     },

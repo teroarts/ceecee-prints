@@ -1,16 +1,14 @@
 import type { Express } from "express";
-import { createServer } from "node:http";
-import type { Server } from "node:http";
 import { z } from "zod";
-import { storage } from "./storage";
-import { insertOrderSchema } from "@shared/schema";
+import type { IStorage } from "./storage-types";
+import { insertOrderSchema } from "../shared/schema";
 import {
   getProductById,
   FREE_SHIPPING_THRESHOLD,
   FLAT_SHIPPING,
-} from "@shared/products";
+} from "../shared/products";
 
-/** Contact-form submissions are delivered to this inbox via FormSubmit. */
+/** Contact-form submissions are delivered to this inbox. */
 const CONTACT_RECIPIENT = "schebet12@gmail.com";
 
 const contactSchema = z.object({
@@ -21,10 +19,9 @@ const contactSchema = z.object({
 
 type OrderItem = { productId: string; size: string; quantity: number };
 
-export async function registerRoutes(
-  httpServer: Server,
-  app: Express,
-): Promise<Server> {
+/** Registers the JSON API on an Express app. Storage is injected so the
+ *  local server can use SQLite while serverless uses an in-memory store. */
+export function registerRoutes(app: Express, storage: IStorage): void {
   app.post("/api/orders", async (req, res) => {
     const parsed = insertOrderSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -93,6 +90,38 @@ export async function registerRoutes(
         .json({ message: "Invalid message details", errors: parsed.error.issues });
     }
 
+    const resendKey = process.env.RESEND_API_KEY;
+
+    // Preferred path: Resend (requires RESEND_API_KEY env var).
+    if (resendKey) {
+      try {
+        const response = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${resendKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            from: process.env.CONTACT_FROM || "CeeCee Prints <onboarding@resend.dev>",
+            to: [CONTACT_RECIPIENT],
+            reply_to: parsed.data.email,
+            subject: `CeeCee Prints — new message from ${parsed.data.name}`,
+            text: `Name: ${parsed.data.name}\nEmail: ${parsed.data.email}\n\n${parsed.data.message}`,
+          }),
+        });
+        if (!response.ok) {
+          throw new Error(`Resend responded ${response.status}`);
+        }
+        return res.json({ sent: true });
+      } catch (error) {
+        console.error("Contact form delivery failed (Resend):", error);
+        return res
+          .status(502)
+          .json({ message: "Could not send the message right now" });
+      }
+    }
+
+    // Fallback: FormSubmit, which needs no API key but blocks some hosts.
     try {
       const response = await fetch(
         `https://formsubmit.co/ajax/${CONTACT_RECIPIENT}`,
@@ -120,6 +149,4 @@ export async function registerRoutes(
         .json({ message: "Could not send the message right now" });
     }
   });
-
-  return httpServer;
 }
