@@ -55,6 +55,7 @@
   --brand-green-foreground: 0 0% 100%;
   --font-sans: "Montserrat", "Avenir Next", "Segoe UI", sans-serif;
   --font-display: "EB Garamond", "Garamond", Georgia, serif;
+  --font-serif: "EB Garamond", "Garamond", Georgia, serif;
   --font-mono: Menlo, monospace;
   --radius: 0.5rem;
   --shadow-2xs: 0px 2px 0px 0px hsl(30 20% 20% / 0);
