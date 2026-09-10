@@ -117,7 +117,7 @@ export function ImageLightbox({ src, alt, open, onClose }: LightboxProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 animate-fade-up"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 animate-fade-up"
       role="dialog"
       aria-modal="true"
       aria-label={`${alt} — enlarged view`}
@@ -169,7 +169,7 @@ export function ImageLightbox({ src, alt, open, onClose }: LightboxProps) {
         </button>
       </div>
 
-      <p className="pointer-events-none absolute bottom-6 left-1/2 z-10 -translate-x-1/2 rounded-full bg-black/60 px-4 py-1.5 text-xs text-white backdrop-blur-sm">
+      <p className="pointer-events-none absolute bottom-6 left-1/2 z-10 hidden -translate-x-1/2 rounded-full bg-black/60 px-4 py-1.5 text-xs text-white backdrop-blur-sm sm:block">
         Scroll to zoom · drag to pan · Esc to close
       </p>
 
