@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Mail, MapPin } from "lucide-react";
+import { Instagram, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -116,22 +116,23 @@ export default function Contact() {
             </h2>
             <p className="flex items-center gap-2 text-sm">
               <Mail className="h-4 w-4 shrink-0 text-primary" aria-hidden />
-              hello@ceeceeprints.co
+              info@ceeceeprints.com
             </p>
           </div>
           <div>
             <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-              Studio
+              Follow us
             </h2>
-            <p className="flex items-start gap-2 text-sm text-muted-foreground">
-              <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
-              1420 Prairie Ave, Suite 3<br />
-              Wichita, KS 67201
-            </p>
-            <p className="mt-3 text-xs text-muted-foreground">
-              Printing soon from Nairobi, Kenya — the studio above is our US
-              fulfillment partner.
-            </p>
+            <a
+              href="https://www.instagram.com/ceecee_prints/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-sm transition-colors hover:text-brand-red"
+              data-testid="link-instagram"
+            >
+              <Instagram className="h-4 w-4 shrink-0 text-brand-red" aria-hidden />
+              @ceecee_prints
+            </a>
           </div>
           <div className="border-t border-border/70 pt-4 text-sm text-muted-foreground">
             <p>Mon–Fri, 9am–5pm CT</p>
