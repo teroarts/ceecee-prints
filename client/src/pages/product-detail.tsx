@@ -5,6 +5,7 @@ import { getProductBySlug, products, FREE_SHIPPING_THRESHOLD } from "@shared/pro
 import { formatPrice, useCart } from "@/lib/cart";
 import { useToast } from "@/hooks/use-toast";
 import { ProductCard } from "@/components/store/product-card";
+import { ImageLightbox, ZoomHint } from "@/components/store/image-lightbox";
 import { cn } from "@/lib/utils";
 
 export default function ProductDetail() {
@@ -12,6 +13,7 @@ export default function ProductDetail() {
   const product = getProductBySlug(slug ?? "");
   const [size, setSize] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const { addItem } = useCart();
   const { toast } = useToast();
 
@@ -67,7 +69,13 @@ export default function ProductDetail() {
       </Link>
 
       <div className="grid gap-8 lg:grid-cols-2 lg:gap-14">
-        <div className="overflow-hidden rounded-lg border border-card-border bg-card">
+        <button
+          type="button"
+          onClick={() => setLightboxOpen(true)}
+          aria-label={`Enlarge photo of ${product.name}`}
+          className="group/enlarge relative block w-full cursor-zoom-in overflow-hidden rounded-lg border border-card-border bg-card focus-visible:outline-2"
+          data-testid="button-enlarge-image"
+        >
           <img
             src={product.image}
             alt={product.name}
@@ -77,7 +85,15 @@ export default function ProductDetail() {
             className="aspect-square w-full object-cover"
             data-testid={`img-product-${product.id}`}
           />
-        </div>
+          <ZoomHint />
+        </button>
+
+        <ImageLightbox
+          src={product.image}
+          alt={product.name}
+          open={lightboxOpen}
+          onClose={() => setLightboxOpen(false)}
+        />
 
         <div className="flex flex-col">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">

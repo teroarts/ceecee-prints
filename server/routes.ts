@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { createServer } from "node:http";
 import type { Server } from "node:http";
+import { z } from "zod";
 import { storage } from "./storage";
 import { insertOrderSchema } from "@shared/schema";
 import {
@@ -8,6 +9,15 @@ import {
   FREE_SHIPPING_THRESHOLD,
   FLAT_SHIPPING,
 } from "@shared/products";
+
+/** Contact-form submissions are delivered to this inbox via FormSubmit. */
+const CONTACT_RECIPIENT = "schebet12@gmail.com";
+
+const contactSchema = z.object({
+  name: z.string().min(2),
+  email: z.string().email(),
+  message: z.string().min(10),
+});
 
 type OrderItem = { productId: string; size: string; quantity: number };
 
@@ -73,6 +83,42 @@ export async function registerRoutes(
       return res.status(404).json({ message: "Order not found" });
     }
     return res.json(order);
+  });
+
+  app.post("/api/contact", async (req, res) => {
+    const parsed = contactSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res
+        .status(400)
+        .json({ message: "Invalid message details", errors: parsed.error.issues });
+    }
+
+    try {
+      const response = await fetch(
+        `https://formsubmit.co/ajax/${CONTACT_RECIPIENT}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify({
+            ...parsed.data,
+            _subject: `CeeCee Prints — new message from ${parsed.data.name}`,
+            _template: "table",
+          }),
+        },
+      );
+      if (!response.ok) {
+        throw new Error(`FormSubmit responded ${response.status}`);
+      }
+      return res.json({ sent: true });
+    } catch (error) {
+      console.error("Contact form delivery failed:", error);
+      return res
+        .status(502)
+        .json({ message: "Could not send the message right now" });
+    }
   });
 
   return httpServer;

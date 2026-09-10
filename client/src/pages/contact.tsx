@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -6,6 +6,7 @@ import { Instagram, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { apiRequest } from "@/lib/queryClient";
 import {
   Form,
   FormControl,
@@ -26,6 +27,7 @@ type ContactValues = z.infer<typeof contactSchema>;
 
 export default function Contact() {
   const { toast } = useToast();
+  const [sending, setSending] = useState(false);
 
   const form = useForm<ContactValues>({
     resolver: zodResolver(contactSchema),
@@ -36,12 +38,24 @@ export default function Contact() {
     document.title = "Contact | CeeCee Prints";
   }, []);
 
-  const onSubmit = () => {
-    form.reset();
-    toast({
-      title: "Message sent",
-      description: "We usually reply within one business day.",
-    });
+  const onSubmit = async (values: ContactValues) => {
+    setSending(true);
+    try {
+      await apiRequest("POST", "/api/contact", values);
+      form.reset();
+      toast({
+        title: "Message sent",
+        description: "Thanks for reaching out — we usually reply within one business day.",
+      });
+    } catch {
+      toast({
+        title: "Message not sent",
+        description: "Something went wrong — email us directly at info@ceeceeprints.com.",
+        variant: "destructive",
+      });
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -102,8 +116,13 @@ export default function Contact() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="h-11 px-6 text-sm font-semibold" data-testid="button-contact-send">
-                Send message
+              <Button
+                type="submit"
+                disabled={sending}
+                className="h-11 px-6 text-sm font-semibold"
+                data-testid="button-contact-send"
+              >
+                {sending ? "Sending…" : "Send message"}
               </Button>
             </form>
           </Form>
