@@ -175,7 +175,7 @@ export default function Cart() {
             Checkout <ArrowRight className="h-4 w-4" aria-hidden />
           </Link>
           <p className="mt-3 text-center text-xs text-muted-foreground">
-            30-day returns · Secure checkout
+            Secure checkout
           </p>
         </aside>
       </div>

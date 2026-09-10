@@ -73,7 +73,7 @@ export function Footer() {
       <div className="border-t border-border/70">
         <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-2 px-4 py-5 text-sm text-muted-foreground sm:flex-row sm:px-6">
           <p>© {new Date().getFullYear()} CeeCee Prints</p>
-          <p>Free shipping on orders over $75 · 30-day returns</p>
+          <p>Free shipping on orders over $75</p>
         </div>
       </div>
     </footer>

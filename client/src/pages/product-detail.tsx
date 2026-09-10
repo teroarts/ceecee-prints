@@ -198,7 +198,7 @@ export default function ProductDetail() {
               ))}
             </ul>
             <p className="mt-4 text-sm text-muted-foreground">
-              Free shipping on orders over {formatPrice(FREE_SHIPPING_THRESHOLD)} · 30-day returns
+              Free shipping on orders over {formatPrice(FREE_SHIPPING_THRESHOLD)}
             </p>
           </div>
         </div>

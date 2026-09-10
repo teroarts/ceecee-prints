@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Link } from "wouter";
-import { ArrowRight, Check, Package, RotateCcw } from "lucide-react";
+import { ArrowRight, Check, Package } from "lucide-react";
 import { products, CATEGORIES, type ProductCategory } from "@shared/products";
 import { ProductCard } from "@/components/store/product-card";
 
@@ -119,10 +119,6 @@ export default function Home() {
               <li className="flex items-center gap-3">
                 <Check className="h-4 w-4 shrink-0 text-brand-green" aria-hidden />
                 Premium ringspun cotton, S–2XL
-              </li>
-              <li className="flex items-center gap-3">
-                <RotateCcw className="h-4 w-4 shrink-0 text-brand-green" aria-hidden />
-                30-day no-questions returns
               </li>
               <li className="flex items-center gap-3">
                 <Package className="h-4 w-4 shrink-0 text-brand-green" aria-hidden />
