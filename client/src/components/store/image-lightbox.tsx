@@ -127,13 +127,13 @@ export function ImageLightbox({ src, alt, open, onClose }: LightboxProps) {
         type="button"
         onClick={onClose}
         aria-label="Close enlarged view"
-        className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
+        className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm transition-colors hover:bg-black/80"
         data-testid="button-lightbox-close"
       >
         <X className="h-5 w-5" aria-hidden />
       </button>
 
-      <div className="absolute left-4 bottom-4 z-10 flex items-center gap-1 rounded-full bg-white/10 p-1 text-white">
+      <div className="absolute left-4 bottom-4 z-10 flex items-center gap-1 rounded-full bg-black/60 p-1 text-white backdrop-blur-sm">
         <button
           type="button"
           onClick={() => zoomBy(1 / 1.4)}
@@ -169,7 +169,7 @@ export function ImageLightbox({ src, alt, open, onClose }: LightboxProps) {
         </button>
       </div>
 
-      <p className="pointer-events-none absolute bottom-6 left-1/2 z-10 -translate-x-1/2 text-xs text-white/60">
+      <p className="pointer-events-none absolute bottom-6 left-1/2 z-10 -translate-x-1/2 rounded-full bg-black/60 px-4 py-1.5 text-xs text-white backdrop-blur-sm">
         Scroll to zoom · drag to pan · Esc to close
       </p>
 
