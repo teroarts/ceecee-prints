@@ -1,8 +1,9 @@
-# Northline Supply Co. — Merch Storefront Starter
+# CeeCee Prints — Merch Storefront Starter
 
 A production-quality merch storefront you can demo to a client and later
 transfer to their domain. Built with Express + Vite + React + TypeScript +
-Tailwind CSS + shadcn/ui, with SQLite (Drizzle ORM) for orders.
+Tailwind CSS + shadcn/ui, with SQLite (Drizzle ORM) for orders. Currently
+branded as **CeeCee Prints** — a Kenyan graphic t-shirt brand.
 
 ## Quick start
 
@@ -52,8 +53,9 @@ When the client approves and you're ready to transfer:
 
 - [ ] Client creates their Vercel/Netlify account (or you transfer the project)
 - [ ] Point the client's domain DNS at the host (A/CNAME records)
-- [ ] Rename the brand: logo (`client/src/components/store/logo.tsx`),
-      page titles (`client/src/pages/*.tsx`, `client/index.html`), copy
+- [ ] Rename the brand: logo (`client/src/components/store/logo.tsx`, images
+      in `client/public/brand/`), page titles (`client/src/pages/*.tsx`,
+      `client/index.html`), copy
 - [ ] Replace demo product images and prices in `shared/products.ts`
 - [ ] Create the client's Stripe account, set live keys in the host's env vars
 - [ ] Swap mock checkout for Stripe Checkout (see above)

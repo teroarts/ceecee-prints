@@ -19,7 +19,7 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 border-b border-border/70 bg-background/85 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-3 sm:px-6">
-        <Link href="/" aria-label="Northline Supply Co. — home">
+        <Link href="/" aria-label="CeeCee Prints — home">
           <Logo />
         </Link>
 
@@ -58,7 +58,7 @@ export function Header() {
             <ShoppingBag className="h-5 w-5" />
             {count > 0 && (
               <span
-                className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-xs font-bold text-primary-foreground"
+                className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-red px-1 text-xs font-bold text-brand-red-foreground"
                 data-testid="badge-cart-count"
               >
                 {count}

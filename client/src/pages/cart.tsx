@@ -9,7 +9,7 @@ export default function Cart() {
     useCart();
 
   useEffect(() => {
-    document.title = "Cart | Northline Supply Co.";
+    document.title = "Cart | CeeCee Prints";
   }, []);
 
   if (items.length === 0) {

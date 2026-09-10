@@ -33,7 +33,7 @@ export default function Contact() {
   });
 
   useEffect(() => {
-    document.title = "Contact | Northline Supply Co.";
+    document.title = "Contact | CeeCee Prints";
   }, []);
 
   const onSubmit = () => {
@@ -116,7 +116,7 @@ export default function Contact() {
             </h2>
             <p className="flex items-center gap-2 text-sm">
               <Mail className="h-4 w-4 shrink-0 text-primary" aria-hidden />
-              hello@northlinesupply.co
+              hello@ceeceeprints.co
             </p>
           </div>
           <div>
@@ -127,6 +127,10 @@ export default function Contact() {
               <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
               1420 Prairie Ave, Suite 3<br />
               Wichita, KS 67201
+            </p>
+            <p className="mt-3 text-xs text-muted-foreground">
+              Printing soon from Nairobi, Kenya — the studio above is our US
+              fulfillment partner.
             </p>
           </div>
           <div className="border-t border-border/70 pt-4 text-sm text-muted-foreground">

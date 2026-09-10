@@ -68,7 +68,7 @@ export default function Checkout() {
   });
 
   useEffect(() => {
-    document.title = "Checkout | Northline Supply Co.";
+    document.title = "Checkout | CeeCee Prints";
   }, []);
 
   if (items.length === 0 && !placeOrder.isPending) {

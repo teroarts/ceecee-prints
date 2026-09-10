@@ -22,203 +22,107 @@ export type Product = {
   details: string[];
 };
 
-export type ProductCategory = "Apparel" | "Headwear" | "Accessories";
+export type ProductCategory = "Black Tees" | "White Tees";
 
-export const CATEGORIES: ProductCategory[] = ["Apparel", "Headwear", "Accessories"];
+export const CATEGORIES: ProductCategory[] = ["Black Tees", "White Tees"];
 
 export const FREE_SHIPPING_THRESHOLD = 7500; // cents
 export const FLAT_SHIPPING = 600; // cents
 
-const APPAREL_SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
-const ONE_SIZE = ["One Size"];
+/** Unisex tee sizes, S through 2XL. */
+export const TEE_SIZES = ["S", "M", "L", "XL", "2XL"];
+
+const TEE_DETAILS = [
+  "100% ringspun cotton, 180 gsm",
+  "Soft-touch screen print, made to survive the wash",
+  "Unisex fit — order your usual size",
+  "Machine wash cold, inside out",
+];
 
 export const products: Product[] = [
   {
-    id: "ridgeline-tee",
-    slug: "ridgeline-heavyweight-tee",
-    name: "Ridgeline Heavyweight Tee",
+    id: "african-map-tee",
+    slug: "african-map-tee",
+    name: "African Map Tee",
     description:
-      "A boxy 240 gsm cotton tee with a substantial hand feel and a collar that keeps its shape wash after wash.",
-    price: 3800,
-    image: "products/ridgeline-tee.webp",
-    category: "Apparel",
-    sizes: APPAREL_SIZES,
+      "The continent in Maasai beadwork geometry — shield mandala, elephant, acacia — printed in bold flag colors on a deep black tee.",
+    price: 3000,
+    image: "products/african-map-tee.webp",
+    category: "Black Tees",
+    sizes: TEE_SIZES,
     featured: true,
     inStock: true,
-    details: [
-      "100% organic combed cotton, 240 gsm",
-      "Garment-dyed for a lived-in finish",
-      "Ribbed collar with taped shoulder seams",
-      "Machine wash cold, tumble dry low",
-    ],
+    details: TEE_DETAILS,
   },
   {
-    id: "dusk-hoodie",
-    slug: "dusk-pullover-hoodie",
-    name: "Dusk Pullover Hoodie",
+    id: "kale-nation-tee",
+    slug: "kale-nation-tee",
+    name: "Kale Nation Tee",
     description:
-      "Our warmest layer in a clay flecked fleece, with a double-lined hood and a kangaroo pocket sized for actual hands.",
-    price: 7200,
-    image: "products/dusk-hoodie.webp",
-    category: "Apparel",
-    sizes: APPAREL_SIZES,
-    featured: true,
-    inStock: true,
-    details: [
-      "Brushed-back fleece, 400 gsm cotton blend",
-      "Double-lined hood with flat drawcords",
-      "Ribbed cuffs and hem",
-      "Machine wash cold, lay flat to dry",
-    ],
-  },
-  {
-    id: "atlas-longsleeve",
-    slug: "atlas-long-sleeve-tee",
-    name: "Atlas Long-Sleeve Tee",
-    description:
-      "The Ridgeline with longer arms for cool mornings — a quiet olive layer that works on trail and off.",
-    price: 4200,
-    image: "products/atlas-longsleeve.webp",
-    category: "Apparel",
-    sizes: APPAREL_SIZES,
+      "A salute to the Kale nation — tractor, snow peaks and flanking spears under a bold block-letter headline in flag colors.",
+    price: 3000,
+    image: "products/kale-nation-tee.webp",
+    category: "White Tees",
+    sizes: TEE_SIZES,
     featured: false,
     inStock: true,
-    details: [
-      "100% organic cotton, 220 gsm",
-      "Set-in sleeves with reinforced cuffs",
-      "Pre-shrunk",
-      "Machine wash cold",
-    ],
+    details: TEE_DETAILS,
   },
   {
-    id: "wanderer-crewneck",
-    slug: "wanderer-crewneck",
-    name: "Wanderer Crewneck",
+    id: "kenyan-lion-tee",
+    slug: "kenyan-lion-tee",
+    name: "Kenyan Lion Tee",
     description:
-      "An oatmeal heather crewneck with a soft interior loopback and enough weight to stand on its own in spring.",
-    price: 6400,
-    image: "products/wanderer-crewneck.webp",
-    category: "Apparel",
-    sizes: APPAREL_SIZES,
-    featured: false,
-    inStock: true,
-    details: [
-      "Loopback cotton fleece, 350 gsm",
-      "V-stitch at collar",
-      "Relaxed fit",
-      "Machine wash cold, lay flat to dry",
-    ],
-  },
-  {
-    id: "field-cap",
-    slug: "field-cap",
-    name: "Field Cap",
-    description:
-      "A washed olive six-panel in brushed canvas with a low profile and an adjustable brass slider.",
+      "The pride of Africa — lion, lioness and Maasai warrior beneath a rising savannah sun, framed in vintage varsity lettering.",
     price: 3200,
-    image: "products/field-cap.webp",
-    category: "Headwear",
-    sizes: ONE_SIZE,
+    image: "products/kenyan-lion-tee.webp",
+    category: "White Tees",
+    sizes: TEE_SIZES,
     featured: true,
     inStock: true,
-    details: [
-      "Washed cotton canvas",
-      "Low-profile six-panel build",
-      "Adjustable brass slider strap",
-      "Spot clean",
-    ],
+    details: TEE_DETAILS,
   },
   {
-    id: "hearth-beanie",
-    slug: "hearth-beanie",
-    name: "Hearth Beanie",
+    id: "kenyan-map-tee",
+    slug: "kenyan-map-tee",
+    name: "Kenyan Map Tee",
     description:
-      "A rust ribbed knit in soft lambswool with a folded cuff that sits right above the ears.",
+      "Kenya's own outline filled with a golden-hour savannah — warrior, elephant and snow-capped peak — glowing against pure black.",
+    price: 3000,
+    image: "products/kenyan-map-tee.webp",
+    category: "Black Tees",
+    sizes: TEE_SIZES,
+    featured: true,
+    inStock: true,
+    details: TEE_DETAILS,
+  },
+  {
+    id: "mapunjan-tee",
+    slug: "mapunjan-tee",
+    name: "Mapunjan Tee",
+    description:
+      "Kalenjin pride in ink and flag color — a field tractor framed by spears and banner ribbons beneath the Mapunjan masthead.",
+    price: 3000,
+    image: "products/mapunjan-tee.webp",
+    category: "White Tees",
+    sizes: TEE_SIZES,
+    featured: false,
+    inStock: true,
+    details: TEE_DETAILS,
+  },
+  {
+    id: "sharp-boy-tee",
+    slug: "sharp-boy-tee",
+    name: "Sharp Boy Tee",
+    description:
+      "The flag, remixed — a paint-splashed Maasai shield and crossed spears under a Stay Guided salute to every sharp boy out there.",
     price: 2800,
-    image: "products/hearth-beanie.webp",
-    category: "Headwear",
-    sizes: ONE_SIZE,
-    featured: false,
-    inStock: true,
-    details: [
-      "100% lambswool, ribbed knit",
-      "Folded cuff, one size fits most",
-      "Hand wash cold, dry flat",
-    ],
-  },
-  {
-    id: "carryall-tote",
-    slug: "carryall-tote",
-    name: "Carryall Tote",
-    description:
-      "A natural ecru canvas tote with cross-stitched handles and an interior pocket for the small things.",
-    price: 2400,
-    image: "products/carryall-tote.webp",
-    category: "Accessories",
-    sizes: ONE_SIZE,
+    image: "products/sharp-boy-tee.webp",
+    category: "White Tees",
+    sizes: TEE_SIZES,
     featured: true,
     inStock: true,
-    details: [
-      "16 oz natural cotton canvas",
-      "Cross-stitched webbing handles",
-      "Interior slip pocket",
-      "Machine wash cold",
-    ],
-  },
-  {
-    id: "trailhead-bottle",
-    slug: "trailhead-bottle",
-    name: "Trailhead Bottle",
-    description:
-      "A matte sage insulated bottle that keeps drinks cold for 24 hours and hot for 12 — 21 oz of everyday utility.",
-    price: 3400,
-    image: "products/trailhead-bottle.webp",
-    category: "Accessories",
-    sizes: ONE_SIZE,
-    featured: false,
-    inStock: true,
-    details: [
-      "Double-wall vacuum-insulated steel",
-      "21 oz / 620 ml",
-      "Powder-coated matte finish",
-      "Hand wash recommended",
-    ],
-  },
-  {
-    id: "enamel-mug",
-    slug: "basecamp-enamel-mug",
-    name: "Basecamp Enamel Mug",
-    description:
-      "A speckled cream enamel mug with a steel rim — light enough for the pack, tough enough for the campsite.",
-    price: 1800,
-    image: "products/enamel-mug.webp",
-    category: "Accessories",
-    sizes: ONE_SIZE,
-    featured: false,
-    inStock: true,
-    details: [
-      "Enamel-coated steel, 12 oz",
-      "Speckled cream finish",
-      "Campfire and dishwasher safe",
-    ],
-  },
-  {
-    id: "trail-stickers",
-    slug: "trail-sticker-pack",
-    name: "Trail Sticker Pack",
-    description:
-      "Six die-cut vinyl stickers — peaks, pines and a slow sun — rated for water bottles, laptops and bear boxes.",
-    price: 800,
-    image: "products/trail-stickers.webp",
-    category: "Accessories",
-    sizes: ONE_SIZE,
-    featured: false,
-    inStock: true,
-    details: [
-      "Six die-cut vinyl stickers",
-      "Weatherproof and dishwasher safe",
-      "Matte finish",
-    ],
+    details: TEE_DETAILS,
   },
 ];
 

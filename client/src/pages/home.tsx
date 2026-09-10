@@ -1,12 +1,12 @@
 import { useEffect } from "react";
 import { Link } from "wouter";
-import { ArrowRight, Leaf, Package, RotateCcw } from "lucide-react";
+import { ArrowRight, Check, Package, RotateCcw } from "lucide-react";
 import { products, CATEGORIES, type ProductCategory } from "@shared/products";
 import { ProductCard } from "@/components/store/product-card";
 
 export default function Home() {
   useEffect(() => {
-    document.title = "Northline Supply Co. — Gear for the long way round";
+    document.title = "CeeCee Prints — Kenyan graphic tees";
   }, []);
 
   const featured = products.filter((p) => p.featured);
@@ -15,43 +15,52 @@ export default function Home() {
 
   return (
     <main>
-      {/* Hero */}
-      <section className="relative isolate overflow-hidden">
-        <img
-          src="products/hero-forest.webp"
-          alt="A hiker in a clay hoodie walking a pine forest trail at golden hour"
-          width={1280}
-          height={720}
-          className="absolute inset-0 -z-10 h-full w-full object-cover"
-          decoding="async"
-        />
-        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-black/65 via-black/35 to-transparent" />
-        <div className="mx-auto flex min-h-[68vh] max-w-6xl flex-col justify-center px-4 py-24 sm:px-6">
-          <p className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-white/75">
-            Autumn drop — now live
-          </p>
-          <h1 className="max-w-xl font-display text-4xl font-extrabold leading-[1.05] text-white sm:text-5xl">
-            Gear for the long way round.
-          </h1>
-          <p className="mt-4 max-w-md text-base text-white/85">
-            Small-batch apparel, headwear and everyday carry — made in honest
-            materials that age better the further you take them.
-          </p>
-          <div className="mt-8 flex flex-wrap items-center gap-3">
-            <Link
-              href="/shop"
-              className="inline-flex h-11 items-center gap-2 rounded-md bg-primary px-6 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-2"
-              data-testid="link-shop-hero"
-            >
-              Shop the collection <ArrowRight className="h-4 w-4" />
-            </Link>
-            <Link
-              href="/about"
-              className="inline-flex h-11 items-center rounded-md border border-white/40 px-6 text-sm font-semibold text-white transition-colors hover:bg-white/10 focus-visible:outline-2"
-              data-testid="link-about-hero"
-            >
-              Our story
-            </Link>
+      {/* Hero — editorial split */}
+      <section className="border-b border-border/70">
+        <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-14 sm:px-6 sm:py-20 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
+          <div>
+            <span className="tri-stripe mb-5" aria-hidden>
+              <span />
+              <span />
+              <span />
+            </span>
+            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+              The first drop — now live
+            </p>
+            <h1 className="font-display text-4xl font-medium leading-[1.05] sm:text-5xl lg:text-6xl">
+              Wear your <span className="italic text-brand-red">heritage.</span>
+            </h1>
+            <p className="mt-5 max-w-md text-base leading-relaxed text-muted-foreground">
+              Bold Kenyan stories — maps, lions, flags and farm pride — printed
+              on premium cotton tees, made to be worn everywhere from Nairobi
+              to wherever home is.
+            </p>
+            <div className="mt-8 flex flex-wrap items-center gap-3">
+              <Link
+                href="/shop"
+                className="inline-flex h-11 items-center gap-2 rounded-md bg-brand-red px-6 text-sm font-semibold uppercase tracking-wide text-brand-red-foreground transition-colors hover:bg-brand-red/90 focus-visible:outline-2"
+                data-testid="link-shop-hero"
+              >
+                Shop the collection <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link
+                href="/about"
+                className="inline-flex h-11 items-center rounded-md border border-border px-6 text-sm font-semibold transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-2"
+                data-testid="link-about-hero"
+              >
+                Our story
+              </Link>
+            </div>
+          </div>
+          <div className="relative overflow-hidden rounded-lg">
+            <img
+              src="products/hero-savannah.webp"
+              alt="A model wearing the Kenyan Lion tee in golden savannah light"
+              width={1050}
+              height={1400}
+              className="aspect-[3/4] w-full object-cover"
+              decoding="async"
+            />
           </div>
         </div>
       </section>
@@ -60,16 +69,16 @@ export default function Home() {
       <section aria-labelledby="featured-heading" className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
         <div className="mb-8 flex items-end justify-between gap-4">
           <div>
-            <h2 id="featured-heading" className="font-display text-xl font-bold sm:text-2xl">
-              This season's favorites
+            <h2 id="featured-heading" className="font-display text-2xl font-medium sm:text-3xl">
+              The first six
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              The pieces that keep selling out — restocked and ready.
+              Six designs, one story. Printed in small runs.
             </p>
           </div>
           <Link
             href="/shop"
-            className="hidden shrink-0 items-center gap-1 text-sm font-semibold text-primary hover:underline sm:inline-flex"
+            className="hidden shrink-0 items-center gap-1 text-sm font-semibold text-brand-red hover:underline sm:inline-flex"
             data-testid="link-shop-all-featured"
           >
             View all <ArrowRight className="h-4 w-4" />
@@ -85,62 +94,62 @@ export default function Home() {
       {/* Story band */}
       <section aria-labelledby="story-heading" className="border-y border-border/70 bg-card">
         <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-16 sm:px-6 sm:py-20 lg:grid-cols-2 lg:gap-16">
-          <div className="overflow-hidden rounded-lg">
+          <div className="order-last overflow-hidden rounded-lg lg:order-first">
             <img
-              src="products/flatlay-gear.webp"
-              alt="Flat lay of Northline gear — folded tee, beanie, enamel mug, cap and stickers on a wood table"
-              width={1000}
-              height={563}
+              src="products/story-workshop.webp"
+              alt="Folded tees stacked on a screen-printing workbench with squeegees and ink"
+              width={933}
+              height={1400}
               loading="lazy"
               decoding="async"
-              className="h-full w-full object-cover"
+              className="aspect-[3/4] w-full object-cover lg:aspect-[4/3]"
             />
           </div>
           <div className="max-w-md">
-            <h2 id="story-heading" className="font-display text-xl font-bold sm:text-2xl">
-              Built to outlast the trend cycle
+            <h2 id="story-heading" className="font-display text-2xl font-medium sm:text-3xl">
+              Every shirt tells a Kenyan story
             </h2>
             <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-              Every piece starts with a question: will someone reach for this in
-              five years? We work with organic cottons, brushed fleeces and
-              washed canvases from mills we've visited, in runs small enough
-              that quality control is personal.
+              CeeCee Prints began with a simple idea: the designs we wear
+              should say something true. Each graphic is drawn from the flag,
+              the land and the pride of where we come from — then printed by
+              hand in small batches on cotton that gets softer with every wash.
             </p>
             <ul className="mt-6 space-y-3 text-sm">
               <li className="flex items-center gap-3">
-                <Leaf className="h-4 w-4 shrink-0 text-primary" aria-hidden />
-                Organic and recycled materials wherever possible
+                <Check className="h-4 w-4 shrink-0 text-brand-green" aria-hidden />
+                Premium ringspun cotton, S–2XL
               </li>
               <li className="flex items-center gap-3">
-                <RotateCcw className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+                <RotateCcw className="h-4 w-4 shrink-0 text-brand-green" aria-hidden />
                 30-day no-questions returns
               </li>
               <li className="flex items-center gap-3">
-                <Package className="h-4 w-4 shrink-0 text-primary" aria-hidden />
-                Carbon-offset shipping on every order
+                <Package className="h-4 w-4 shrink-0 text-brand-green" aria-hidden />
+                Free shipping on orders over $75
               </li>
             </ul>
           </div>
         </div>
       </section>
 
-      {/* Category index */}
-      <section aria-labelledby="categories-heading" className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
-        <h2 id="categories-heading" className="mb-2 font-display text-xl font-bold sm:text-2xl">
-          Browse by category
+      {/* Collection index */}
+      <section aria-labelledby="collection-heading" className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
+        <h2 id="collection-heading" className="mb-2 font-display text-2xl font-medium sm:text-3xl">
+          Browse the collection
         </h2>
-        <p className="mb-8 text-sm text-muted-foreground">Ten pieces. No filler.</p>
+        <p className="mb-8 text-sm text-muted-foreground">Six designs. No filler.</p>
         <ul className="divide-y divide-border/70 border-y border-border/70">
           {CATEGORIES.map((category) => (
             <li key={category}>
               <Link
                 href={`/shop?category=${encodeURIComponent(category)}`}
-                className="group flex items-center justify-between py-5 transition-colors hover:text-primary"
-                data-testid={`link-category-row-${category.toLowerCase()}`}
+                className="group flex items-center justify-between py-5 transition-colors hover:text-brand-red"
+                data-testid={`link-category-row-${category.toLowerCase().replace(/\s+/g, "-")}`}
               >
-                <span className="font-display text-lg font-bold">{category}</span>
+                <span className="font-display text-lg font-medium">{category}</span>
                 <span className="flex items-center gap-3 text-sm text-muted-foreground">
-                  {countByCategory(category)} pieces
+                  {countByCategory(category)} {countByCategory(category) === 1 ? "design" : "designs"}
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" aria-hidden />
                 </span>
               </Link>

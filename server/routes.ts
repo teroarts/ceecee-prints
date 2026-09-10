@@ -51,7 +51,7 @@ export async function registerRoutes(
     }
 
     const shipping = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : FLAT_SHIPPING;
-    const orderNumber = `NL-${Date.now().toString(36).toUpperCase()}${Math.floor(
+    const orderNumber = `CC-${Date.now().toString(36).toUpperCase()}${Math.floor(
       Math.random() * 90 + 10,
     )}`;
 

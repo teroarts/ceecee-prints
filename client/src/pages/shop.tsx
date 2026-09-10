@@ -31,8 +31,8 @@ export default function Shop() {
 
   useEffect(() => {
     document.title = category
-      ? `${category} — Shop | Northline Supply Co.`
-      : "Shop | Northline Supply Co.";
+      ? `${category} — Shop | CeeCee Prints`
+      : "Shop | CeeCee Prints";
   }, [category]);
 
   const visible = useMemo(() => {
@@ -56,11 +56,11 @@ export default function Shop() {
   return (
     <main className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
       <header className="mb-8">
-        <h1 className="font-display text-2xl font-bold sm:text-3xl">
+        <h1 className="font-display text-2xl font-medium sm:text-3xl">
           {category ?? "The full collection"}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          {visible.length} {visible.length === 1 ? "piece" : "pieces"}
+          {visible.length} {visible.length === 1 ? "design" : "designs"}
           {category ? ` in ${category.toLowerCase()}` : ""} · Free shipping over $75
         </p>
       </header>
@@ -91,7 +91,7 @@ export default function Shop() {
                   ? "border-primary bg-primary text-primary-foreground"
                   : "border-border bg-card text-muted-foreground hover:text-foreground",
               )}
-              data-testid={`button-filter-${c.toLowerCase()}`}
+              data-testid={`button-filter-${c.toLowerCase().replace(/\s+/g, "-")}`}
             >
               {c}
             </button>

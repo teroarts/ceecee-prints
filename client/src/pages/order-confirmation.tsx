@@ -26,7 +26,7 @@ export default function OrderConfirmation() {
   });
 
   useEffect(() => {
-    document.title = "Order confirmed | Northline Supply Co.";
+    document.title = "Order confirmed | CeeCee Prints";
   }, []);
 
   if (isLoading) {
@@ -64,7 +64,7 @@ export default function OrderConfirmation() {
   return (
     <main className="mx-auto max-w-2xl px-4 py-16 sm:px-6 sm:py-24">
       <div className="text-center">
-        <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground">
+        <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-brand-green text-brand-green-foreground">
           <Check className="h-7 w-7" aria-hidden />
         </div>
         <h1 className="font-display text-2xl font-bold sm:text-3xl">

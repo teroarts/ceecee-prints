@@ -17,8 +17,8 @@ export default function ProductDetail() {
 
   useEffect(() => {
     document.title = product
-      ? `${product.name} | Northline Supply Co.`
-      : "Not found | Northline Supply Co.";
+      ? `${product.name} | CeeCee Prints`
+      : "Not found | CeeCee Prints";
   }, [product]);
 
   useEffect(() => {
