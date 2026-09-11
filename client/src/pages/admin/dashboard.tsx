@@ -160,6 +160,7 @@ export default function AdminDashboard() {
                 <Area
                   type="monotone"
                   dataKey="cents"
+                  name="Revenue"
                   stroke="#036830"
                   strokeWidth={2}
                   fill="url(#revenueFill)"
