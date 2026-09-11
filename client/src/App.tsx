@@ -19,6 +19,11 @@ import OrderConfirmation from "@/pages/order-confirmation";
 import About from "@/pages/about";
 import Contact from "@/pages/contact";
 import NotFound from "@/pages/not-found";
+import AdminLogin from "@/pages/admin/login";
+import AdminDashboard from "@/pages/admin/dashboard";
+import AdminOrders from "@/pages/admin/orders";
+import AdminProducts from "@/pages/admin/products";
+import { AdminGuard } from "@/components/admin/shell";
 
 /** Resets the scroll position whenever the route changes, so every
  *  page opens at the top instead of inheriting the previous page's offset. */
@@ -33,6 +38,31 @@ function ScrollToTop() {
 }
 
 function AppShell() {
+  const [location] = useLocation();
+  const isAdmin = location.startsWith("/admin");
+
+  // Admin routes render inside their own shell, without storefront chrome.
+  if (isAdmin) {
+    return (
+      <>
+        <ScrollToTop />
+        <Switch>
+          <Route path="/admin/login" component={AdminLogin} />
+          <Route path="/admin" component={() => (
+            <AdminGuard><AdminDashboard /></AdminGuard>
+          )} />
+          <Route path="/admin/orders" component={() => (
+            <AdminGuard><AdminOrders /></AdminGuard>
+          )} />
+          <Route path="/admin/products" component={() => (
+            <AdminGuard><AdminProducts /></AdminGuard>
+          )} />
+          <Route component={AdminLogin} />
+        </Switch>
+      </>
+    );
+  }
+
   return (
     <div className="flex min-h-screen flex-col">
       <ScrollToTop />

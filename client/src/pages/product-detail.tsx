@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "wouter";
 import { Check, ChevronLeft, Minus, Plus, ShoppingBag } from "lucide-react";
-import { getProductBySlug, products, FREE_SHIPPING_THRESHOLD } from "@shared/products";
+import { FREE_SHIPPING_THRESHOLD } from "@shared/products";
+import { useProducts } from "@/lib/catalog";
 import { formatPrice, useCart } from "@/lib/cart";
 import { useToast } from "@/hooks/use-toast";
 import { ProductCard } from "@/components/store/product-card";
@@ -10,7 +11,9 @@ import { cn } from "@/lib/utils";
 
 export default function ProductDetail() {
   const { slug } = useParams<{ slug: string }>();
-  const product = getProductBySlug(slug ?? "");
+  const { products } = useProducts();
+  const product = products.find((p) => p.slug === slug) ??
+    products.find((p) => p.id === slug);
   const [size, setSize] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -35,7 +38,7 @@ export default function ProductDetail() {
             .filter((p) => p.category === product.category && p.id !== product.id)
             .slice(0, 4)
         : [],
-    [product],
+    [product, products],
   );
 
   if (!product) {

@@ -4,26 +4,49 @@ import { MemoryStorage } from "./storage-memory";
 /**
  * Picks an order store at startup.
  *
- * SQLite is preferred for local/self-hosted runs because orders survive a
- * restart. Some hosts can't load the native better-sqlite3 binding (or have a
- * read-only filesystem), so we degrade to an in-memory store instead of
- * crashing the whole server on boot.
+ * - Postgres when DATABASE_URL is set (production mode — orders and product
+ *   edits persist).
+ * - In-memory otherwise (demo mode — the storefront still works using the
+ *   seed catalog, but nothing persists).
  *
- * Set STORAGE=memory to force the in-memory store.
+ * If the database is configured but unreachable at boot, we fall back to
+ * in-memory so the storefront stays up and the admin dashboard shows its
+ * "database not configured / unreachable" state.
  */
+export type StorageMode = "postgres" | "memory";
+
+let resolved: IStorage | null = null;
+let mode: StorageMode = "memory";
+
 export async function resolveStorage(): Promise<IStorage> {
-  if (process.env.STORAGE === "memory") {
-    return new MemoryStorage();
+  if (resolved) return resolved;
+
+  if (process.env.DATABASE_URL) {
+    try {
+      const { PostgresStorage } = await import("./storage-pg");
+      // Verify connectivity before committing to Postgres.
+      const candidate = new PostgresStorage();
+      await candidate.listProducts();
+      resolved = candidate;
+      mode = "postgres";
+      return resolved;
+    } catch (error) {
+      console.error(
+        "Postgres storage unavailable — falling back to in-memory:",
+        error,
+      );
+    }
   }
 
-  try {
-    const { DatabaseStorage } = await import("./storage");
-    return new DatabaseStorage();
-  } catch (error) {
-    console.error(
-      "SQLite storage unavailable — falling back to in-memory orders:",
-      error,
-    );
-    return new MemoryStorage();
-  }
+  resolved = new MemoryStorage();
+  mode = "memory";
+  return resolved;
+}
+
+export function storageMode(): StorageMode {
+  return mode;
+}
+
+export function dbConfigured(): boolean {
+  return Boolean(process.env.DATABASE_URL);
 }

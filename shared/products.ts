@@ -32,7 +32,8 @@ export const FLAT_SHIPPING = 600; // cents
 /** Unisex tee sizes, S through 2XL. */
 export const TEE_SIZES = ["S", "M", "L", "XL", "2XL"];
 
-const TEE_DETAILS = [
+/** Default care details used by new products in the admin dashboard. */
+export const TEE_DETAILS = [
   "100% ringspun cotton, 180 gsm",
   "Soft-touch screen print, made to survive the wash",
   "Unisex fit — order your usual size",

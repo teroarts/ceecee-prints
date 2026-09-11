@@ -3,7 +3,6 @@ import { Link, useParams } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Check, Package } from "lucide-react";
 import { formatPrice } from "@/lib/cart";
-import { getProductById } from "@shared/products";
 import { Skeleton } from "@/components/ui/skeleton";
 
 type OrderResponse = {
@@ -16,7 +15,15 @@ type OrderResponse = {
   total: number;
 };
 
-type OrderItem = { productId: string; size: string; quantity: number };
+type OrderItem = {
+  productId: string;
+  size: string;
+  quantity: number;
+  /** Snapshot fields present on orders created after the admin update */
+  name?: string;
+  unitPrice?: number;
+  image?: string;
+};
 
 export default function OrderConfirmation() {
   const { orderNumber } = useParams<{ orderNumber: string }>();
@@ -89,12 +96,13 @@ export default function OrderConfirmation() {
         </h2>
         <ul className="mt-4 divide-y divide-border/70">
           {items.map((item) => {
-            const product = getProductById(item.productId);
+            const name = item.name ?? item.productId;
+            const unitPrice = item.unitPrice ?? 0;
             return (
               <li key={`${item.productId}-${item.size}`} className="flex items-center gap-3 py-3">
-                {product && (
+                {item.image && (
                   <img
-                    src={product.image}
+                    src={item.image}
                     alt=""
                     width={44}
                     height={44}
@@ -104,14 +112,14 @@ export default function OrderConfirmation() {
                   />
                 )}
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium">{product?.name ?? item.productId}</p>
+                  <p className="text-sm font-medium">{name}</p>
                   <p className="text-xs text-muted-foreground">
                     {item.size} · Qty {item.quantity}
                   </p>
                 </div>
-                {product && (
+                {item.unitPrice !== undefined && (
                   <p className="text-sm font-semibold tabular-nums">
-                    {formatPrice(product.price * item.quantity)}
+                    {formatPrice(unitPrice * item.quantity)}
                   </p>
                 )}
               </li>

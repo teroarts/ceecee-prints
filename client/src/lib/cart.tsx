@@ -5,8 +5,9 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
-  getProductById,
+  products as seedProducts,
   FREE_SHIPPING_THRESHOLD,
   FLAT_SHIPPING,
   type Product,
@@ -40,16 +41,20 @@ const CartContext = createContext<CartContextValue | null>(null);
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [rawItems, setRawItems] = useState<CartItem[]>([]);
+  const { data: catalog } = useQuery<Product[]>({
+    queryKey: ["/api/products"],
+  });
+  const products = catalog && catalog.length > 0 ? catalog : seedProducts;
 
   const items = useMemo<CartLine[]>(
     () =>
       rawItems
         .map((item) => {
-          const product = getProductById(item.productId);
+          const product = products.find((p) => p.id === item.productId);
           return product ? { ...item, product } : null;
         })
         .filter((line): line is CartLine => line !== null),
-    [rawItems],
+    [rawItems, products],
   );
 
   const value = useMemo<CartContextValue>(() => {

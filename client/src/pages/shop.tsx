@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { products, CATEGORIES, type ProductCategory } from "@shared/products";
+import { useProducts } from "@/lib/catalog";
 import { ProductCard } from "@/components/store/product-card";
 import { cn } from "@/lib/utils";
 
@@ -15,14 +15,20 @@ const SORT_LABELS: Record<SortKey, string> = {
 };
 
 export default function Shop() {
+  const { products } = useProducts();
+  const categories = useMemo<string[]>(
+    () => Array.from(new Set(products.map((p) => p.category as string))),
+    [products],
+  );
   const [location] = useLocation();
   const queryCategory = useMemo(() => {
     const params = new URLSearchParams(location.split("?")[1] ?? "");
     const value = params.get("category");
-    return CATEGORIES.includes(value as ProductCategory) ? (value as ProductCategory) : null;
+    if (!value) return null;
+    return categories.includes(value) ? value : null;
   }, [location]);
 
-  const [category, setCategory] = useState<ProductCategory | null>(queryCategory);
+  const [category, setCategory] = useState<string | null>(queryCategory);
   const [sort, setSort] = useState<SortKey>("featured");
 
   useEffect(() => {
@@ -80,7 +86,7 @@ export default function Shop() {
           >
             All
           </button>
-          {CATEGORIES.map((c) => (
+          {categories.map((c) => (
             <button
               key={c}
               type="button"

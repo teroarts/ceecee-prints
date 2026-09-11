@@ -1,16 +1,21 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { Link } from "wouter";
 import { ArrowRight, Check, Package } from "lucide-react";
-import { products, CATEGORIES, type ProductCategory } from "@shared/products";
+import { useProducts } from "@/lib/catalog";
 import { ProductCard } from "@/components/store/product-card";
 
 export default function Home() {
+  const { products } = useProducts();
   useEffect(() => {
     document.title = "CeeCee Prints — Kenyan graphic tees";
   }, []);
 
-  const featured = products.filter((p) => p.featured);
-  const countByCategory = (category: ProductCategory) =>
+  const featured = useMemo(() => products.filter((p) => p.featured), [products]);
+  const categories = useMemo(
+    () => Array.from(new Set(products.map((p) => p.category))),
+    [products],
+  );
+  const countByCategory = (category: string) =>
     products.filter((p) => p.category === category).length;
 
   return (
@@ -136,7 +141,7 @@ export default function Home() {
         </h2>
         <p className="mb-8 text-sm text-muted-foreground">Six designs. No filler.</p>
         <ul className="divide-y divide-border/70 border-y border-border/70">
-          {CATEGORIES.map((category) => (
+          {categories.map((category) => (
             <li key={category}>
               <Link
                 href={`/shop?category=${encodeURIComponent(category)}`}

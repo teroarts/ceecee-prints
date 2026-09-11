@@ -1,8 +1,10 @@
 import { Link } from "wouter";
 import { LogoMark } from "./logo";
-import { CATEGORIES } from "@shared/products";
+import { useProducts } from "@/lib/catalog";
 
 export function Footer() {
+  const { products } = useProducts();
+  const categories = Array.from(new Set(products.map((p) => p.category)));
   return (
     <footer className="border-t border-border/70 bg-background">
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:grid-cols-2 sm:px-6 lg:grid-cols-4">
@@ -22,7 +24,7 @@ export function Footer() {
         <nav aria-label="Shop categories">
           <h3 className="mb-3 text-sm font-semibold">Shop</h3>
           <ul className="space-y-2 text-sm text-muted-foreground">
-            {CATEGORIES.map((category) => (
+            {categories.map((category) => (
               <li key={category}>
                 <Link
                   href={`/shop?category=${encodeURIComponent(category)}`}
