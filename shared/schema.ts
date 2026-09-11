@@ -53,6 +53,8 @@ export const orders = pgTable("orders", {
   total: integer("total").notNull(),
   /** pending | fulfilled | cancelled */
   orderStatus: text("order_status").notNull().default("pending"),
+  /** Stripe Checkout session that paid for this order (nullable) */
+  stripeSessionId: text("stripe_session_id").unique(),
   /** unpaid | paid | refunded */
   paymentStatus: text("payment_status").notNull().default("unpaid"),
   createdAt: timestamp("created_at", { withTimezone: true })

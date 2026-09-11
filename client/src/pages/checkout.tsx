@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { ArrowRight, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,7 +33,12 @@ type CheckoutValues = z.infer<typeof checkoutSchema>;
 
 export default function Checkout() {
   const { items, subtotal, shipping, total, clear } = useCart();
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
+
+  const { data: checkoutConfig } = useQuery<{ enabled: boolean }>({
+    queryKey: ["/api/checkout/config"],
+  });
+  const stripeEnabled = checkoutConfig?.enabled ?? false;
 
   const form = useForm<CheckoutValues>({
     resolver: zodResolver(checkoutSchema),
@@ -47,21 +52,34 @@ export default function Checkout() {
     },
   });
 
+  const cartItemsJson = JSON.stringify(
+    items.map((item) => ({
+      productId: item.productId,
+      size: item.size,
+      quantity: item.quantity,
+    })),
+  );
+
   const placeOrder = useMutation({
     mutationFn: async (values: CheckoutValues) => {
+      if (stripeEnabled) {
+        // Stripe Checkout: the order is created after payment completes.
+        const res = await apiRequest("POST", "/api/checkout", {
+          ...values,
+          items: cartItemsJson,
+        });
+        const { url } = (await res.json()) as { url: string };
+        window.location.assign(url);
+        return null;
+      }
       const res = await apiRequest("POST", "/api/orders", {
         ...values,
-        items: JSON.stringify(
-          items.map((item) => ({
-            productId: item.productId,
-            size: item.size,
-            quantity: item.quantity,
-          })),
-        ),
+        items: cartItemsJson,
       });
-      return (await res.json()) as { orderNumber: string };
+      return (await res.json()) as { orderNumber: string } | null;
     },
     onSuccess: (order) => {
+      if (!order) return; // redirected to Stripe
       // Seed the cache so the confirmation page renders from this response
       // instead of refetching — serverless instances don't share state.
       queryClient.setQueryData(["/api/orders", order.orderNumber], order);
@@ -209,6 +227,12 @@ export default function Checkout() {
               </div>
             </section>
 
+            {location.includes("cancelled=1") && (
+              <p className="rounded-md bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-400" role="status">
+                Payment cancelled — your cart is still here whenever you're ready.
+              </p>
+            )}
+
             {placeOrder.isError && (
               <p className="rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive" role="alert" data-testid="text-order-error">
                 Something went wrong placing your order. Please try again.
@@ -222,12 +246,20 @@ export default function Checkout() {
                 disabled={placeOrder.isPending}
                 data-testid="button-place-order"
               >
-                {placeOrder.isPending ? "Placing order…" : `Place order — ${formatPrice(total)}`}
+                {placeOrder.isPending
+                  ? stripeEnabled
+                    ? "Opening secure checkout…"
+                    : "Placing order…"
+                  : stripeEnabled
+                    ? `Pay with card — ${formatPrice(total)}`
+                    : `Place order — ${formatPrice(total)}`}
                 {!placeOrder.isPending && <ArrowRight className="ml-1 h-4 w-4" aria-hidden />}
               </Button>
               <p className="flex items-center justify-center gap-1.5 text-center text-xs text-muted-foreground">
                 <ShieldCheck className="h-3.5 w-3.5" aria-hidden />
-                Demo checkout — no payment is processed
+                {stripeEnabled
+                  ? "Secure card payment via Stripe"
+                  : "Demo checkout — no payment is processed"}
               </p>
             </div>
           </form>

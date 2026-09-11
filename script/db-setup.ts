@@ -54,11 +54,14 @@ async function main() {
       shipping integer NOT NULL,
       total integer NOT NULL,
       order_status text NOT NULL DEFAULT 'pending',
+      stripe_session_id text UNIQUE,
       payment_status text NOT NULL DEFAULT 'unpaid',
       created_at timestamptz NOT NULL DEFAULT now()
     )`;
 
-  // Migration path for databases created before stock tracking existed.
+  // Migrations for databases created before these features existed.
+  await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS stripe_session_id text`;
+  await sql`CREATE UNIQUE INDEX IF NOT EXISTS orders_stripe_session_id_key ON orders (stripe_session_id)`;
   await sql`ALTER TABLE products ADD COLUMN IF NOT EXISTS stock integer`;
 
   const existing = await sql`SELECT count(*)::int AS n FROM products`;

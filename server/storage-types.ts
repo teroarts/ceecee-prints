@@ -30,12 +30,16 @@ export type OrderRecord = {
   total: number;
   orderStatus: OrderStatus;
   paymentStatus: PaymentStatus;
+  stripeSessionId?: string | null;
   /** ISO timestamp */
   createdAt: string;
 };
 
 export type NewOrder = {
   orderNumber: string;
+  /** Set for orders created by a completed Stripe Checkout session */
+  stripeSessionId?: string;
+  paymentStatus?: PaymentStatus;
   customerName: string;
   email: string;
   address: string;
@@ -61,6 +65,9 @@ export type OrderStatusPatch = {
 export interface IStorage {
   // orders
   createOrder(order: NewOrder): Promise<OrderRecord>;
+  getOrderByStripeSession(
+    sessionId: string,
+  ): Promise<OrderRecord | undefined>;
   getOrderByNumber(orderNumber: string): Promise<OrderRecord | undefined>;
   listOrders(limit?: number): Promise<OrderRecord[]>;
   updateOrderStatus(

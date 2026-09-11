@@ -27,7 +27,7 @@ export class MemoryStorage implements IStorage {
       id: this.nextOrderId++,
       ...order,
       orderStatus: "pending",
-      paymentStatus: "unpaid",
+      paymentStatus: order.paymentStatus ?? "unpaid",
       createdAt: new Date().toISOString(),
     };
     this.orders.set(record.orderNumber, record);
@@ -36,6 +36,14 @@ export class MemoryStorage implements IStorage {
 
   async getOrderByNumber(orderNumber: string): Promise<OrderRecord | undefined> {
     return this.orders.get(orderNumber);
+  }
+
+  async getOrderByStripeSession(
+    sessionId: string,
+  ): Promise<OrderRecord | undefined> {
+    return Array.from(this.orders.values()).find(
+      (o) => o.stripeSessionId === sessionId,
+    );
   }
 
   async listOrders(limit = 500): Promise<OrderRecord[]> {

@@ -69,9 +69,25 @@ export class PostgresStorage implements IStorage {
   async createOrder(order: NewOrder): Promise<OrderRecord> {
     const [row] = await this.db
       .insert(ordersTable)
-      .values(order)
+      .values({
+        ...order,
+        ...(order.paymentStatus
+          ? { paymentStatus: order.paymentStatus }
+          : {}),
+      })
       .returning();
     return rowToOrder(row);
+  }
+
+  async getOrderByStripeSession(
+    sessionId: string,
+  ): Promise<OrderRecord | undefined> {
+    const [row] = await this.db
+      .select()
+      .from(ordersTable)
+      .where(eq(ordersTable.stripeSessionId, sessionId))
+      .limit(1);
+    return row ? rowToOrder(row) : undefined;
   }
 
   async getOrderByNumber(orderNumber: string): Promise<OrderRecord | undefined> {

@@ -1,6 +1,7 @@
 import express from "express";
 import type { Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
+import { stripeEnabled } from "./checkout-service";
 import { resolveStorage, storageMode } from "./storage-resolve";
 
 /**
@@ -19,13 +20,24 @@ import { resolveStorage, storageMode } from "./storage-resolve";
 const storage = await resolveStorage();
 const app = express();
 
-app.use(express.json());
+app.use(
+  express.json({
+    verify: (req, _res, buf) => {
+      (req as { rawBody?: unknown }).rawBody = buf;
+    },
+  }),
+);
 app.use(express.urlencoded({ extended: false }));
 
 registerRoutes(app, storage);
 
 app.get("/api/health", (_req, res) => {
-  res.json({ ok: true, storage: storageMode(), node: process.version });
+  res.json({
+    ok: true,
+    storage: storageMode(),
+    stripe: stripeEnabled(),
+    node: process.version,
+  });
 });
 
 app.use((err: any, _req: Request, res: Response, next: NextFunction) => {

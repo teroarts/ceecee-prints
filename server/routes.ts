@@ -12,6 +12,12 @@ import {
 } from "../shared/products";
 import { dbConfigured, storageMode } from "./storage-resolve";
 import {
+  createCheckoutSession,
+  confirmStripeSession,
+  handleStripeWebhook,
+  stripeEnabled,
+} from "./checkout-service";
+import {
   adminAuthConfigured,
   clearSessionCookie,
   isAdminRequest,
@@ -148,6 +154,99 @@ export function registerRoutes(app: Express, storage: IStorage): void {
     }
 
     return res.status(201).json(order);
+  });
+
+  /* ---------------------------- stripe checkout --------------------------- */
+
+  // Lets the client know whether card payments are available, so the
+  // checkout form can pick the right submit flow.
+  app.get("/api/checkout/config", (_req, res) => {
+    res.json({ enabled: stripeEnabled() });
+  });
+
+  app.post("/api/checkout", async (req, res) => {
+    if (!stripeEnabled()) {
+      return res
+        .status(503)
+        .json({ message: "Card payments are not configured" });
+    }
+    const parsed = orderInputSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res
+        .status(400)
+        .json({ message: "Invalid order details", errors: parsed.error.issues });
+    }
+    let items: CartItem[];
+    try {
+      items =
+        typeof parsed.data.items === "string"
+          ? (JSON.parse(parsed.data.items) as CartItem[])
+          : (parsed.data.items as unknown as CartItem[]);
+    } catch {
+      return res.status(400).json({ message: "Invalid items payload" });
+    }
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ message: "Cart is empty" });
+    }
+    try {
+      const result = await createCheckoutSession(storage, req, parsed.data, items);
+      if ("error" in result) {
+        return res.status(result.status).json({ message: result.error });
+      }
+      return res.json({ url: result.url });
+    } catch (error) {
+      console.error("POST /api/checkout failed:", error);
+      return res
+        .status(500)
+        .json({ message: "Could not start checkout — please try again" });
+    }
+  });
+
+  // Called by the success page after Stripe redirects back. Creates the
+  // order only once the session is verified as paid.
+  app.post("/api/checkout/confirm", async (req, res) => {
+    if (!stripeEnabled()) {
+      return res
+        .status(503)
+        .json({ message: "Card payments are not configured" });
+    }
+    const sessionId = req.body?.sessionId;
+    if (typeof sessionId !== "string" || sessionId.length === 0) {
+      return res.status(400).json({ message: "Missing session id" });
+    }
+    try {
+      const result = await confirmStripeSession(storage, sessionId);
+      if (result.status === "unpaid") {
+        return res.status(402).json({ message: "Payment not completed" });
+      }
+      if (result.status === "error") {
+        return res.status(400).json({ message: result.message });
+      }
+      return res.json(result.order);
+    } catch (error) {
+      console.error("POST /api/checkout/confirm failed:", error);
+      return res
+        .status(500)
+        .json({ message: "Could not verify your payment" });
+    }
+  });
+
+  // Backup path for customers who never return from Stripe. The payload is
+  // treated as a hint only — the session is re-fetched from Stripe before
+  // an order is created, so unauthenticated calls can't forge anything.
+  app.post("/api/webhooks/stripe", async (req, res) => {
+    if (!stripeEnabled()) {
+      return res.status(503).json({ message: "Not configured" });
+    }
+    const ok = await handleStripeWebhook(
+      storage,
+      (req as { rawBody?: unknown }).rawBody ?? req.body,
+      req.headers["stripe-signature"] as string | undefined,
+    );
+    if (!ok) {
+      return res.status(400).json({ message: "Invalid webhook payload" });
+    }
+    return res.json({ received: true });
   });
 
   app.get("/api/orders/:orderNumber", async (req, res) => {

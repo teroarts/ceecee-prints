@@ -15,6 +15,7 @@ import Shop from "@/pages/shop";
 import ProductDetail from "@/pages/product-detail";
 import Cart from "@/pages/cart";
 import Checkout from "@/pages/checkout";
+import CheckoutSuccess from "@/pages/checkout-success";
 import OrderConfirmation from "@/pages/order-confirmation";
 import About from "@/pages/about";
 import Contact from "@/pages/contact";
@@ -80,6 +81,7 @@ function AppShell() {
           <Route path="/shop/:slug" component={ProductDetail} />
           <Route path="/cart" component={Cart} />
           <Route path="/checkout" component={Checkout} />
+          <Route path="/checkout/success" component={CheckoutSuccess} />
           <Route path="/order/:orderNumber" component={OrderConfirmation} />
           <Route path="/about" component={About} />
           <Route path="/contact" component={Contact} />
