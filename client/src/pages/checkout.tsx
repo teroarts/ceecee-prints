@@ -33,7 +33,8 @@ type CheckoutValues = z.infer<typeof checkoutSchema>;
 
 export default function Checkout() {
   const { items, subtotal, shipping, total, clear } = useCart();
-  const [location, navigate] = useLocation();
+  const [, navigate] = useLocation();
+  const cancelled = window.location.hash.includes("cancelled=1");
 
   const { data: checkoutConfig } = useQuery<{ enabled: boolean }>({
     queryKey: ["/api/checkout/config"],
@@ -227,7 +228,7 @@ export default function Checkout() {
               </div>
             </section>
 
-            {location.includes("cancelled=1") && (
+            {cancelled && (
               <p className="rounded-md bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-400" role="status">
                 Payment cancelled — your cart is still here whenever you're ready.
               </p>
