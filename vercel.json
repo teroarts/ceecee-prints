@@ -2,5 +2,8 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "npm run db:setup && npm run build:vercel",
   "outputDirectory": "dist/public",
-  "framework": null
+  "framework": null,
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/index" }
+  ]
 }

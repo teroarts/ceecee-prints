@@ -6,11 +6,13 @@ import { mkdir, rm } from "node:fs/promises";
  * Vercel build.
  *
  * 1. Builds the client into `dist/public` (served as static assets).
- * 2. Bundles the Express API into `api/[...slug].mjs`.
+ * 2. Bundles the Express API into `api/index.mjs`.
  *
  * The API is bundled rather than deployed as source because Vercel's Node
  * builder compiles each file under `api/` on its own and does not follow
- * relative imports into `server/` or `shared/`.
+ * relative imports into `server/` or `shared/`. `vercel.json` rewrites all
+ * /api/* paths to this single function (Vercel's [...slug] catch-alls only
+ * match one path segment outside Next.js).
  */
 
 // ESM output needs CJS interop shims — some bundled dependencies reference
@@ -32,7 +34,7 @@ async function buildAll() {
 
   await esbuild({
     entryPoints: ["server/vercel-entry.ts"],
-    outfile: "api/[...slug].mjs",
+    outfile: "api/index.mjs",
     platform: "node",
     target: "node20",
     format: "esm",
