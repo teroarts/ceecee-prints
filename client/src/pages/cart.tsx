@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { ArrowRight, Minus, Plus, ShoppingBag, Trash2, Truck } from "lucide-react";
 import { formatPrice, useCart } from "@/lib/cart";
 import { FREE_SHIPPING_THRESHOLD } from "@shared/products";
+import { resolveImage } from "@/lib/utils";
 
 export default function Cart() {
   const { items, subtotal, shipping, total, freeShippingRemaining, updateQuantity, removeItem } =
@@ -50,7 +51,7 @@ export default function Cart() {
                 className="shrink-0 overflow-hidden rounded-md border border-card-border bg-card"
               >
                 <img
-                  src={item.product.image}
+                  src={resolveImage(item.product.image)}
                   alt={item.product.name}
                   width={96}
                   height={96}

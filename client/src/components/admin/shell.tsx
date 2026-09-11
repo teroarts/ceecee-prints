@@ -125,7 +125,7 @@ function AdminShell({
             variant="ghost"
             className="w-full justify-start gap-3 text-muted-foreground"
           >
-            <a href="/#/" target="_blank" rel="noreferrer">
+            <a href="/" target="_blank" rel="noreferrer">
               <Store className="h-4 w-4" aria-hidden /> View store
             </a>
           </Button>

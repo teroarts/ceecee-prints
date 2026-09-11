@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/form";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatPrice, useCart } from "@/lib/cart";
+import { resolveImage } from "@/lib/utils";
 
 const checkoutSchema = z.object({
   customerName: z.string().min(2, "Please enter your full name"),
@@ -272,7 +273,7 @@ export default function Checkout() {
             {items.map((item) => (
               <li key={`${item.productId}-${item.size}`} className="flex items-center gap-3">
                 <img
-                  src={item.product.image}
+                  src={resolveImage(item.product.image)}
                   alt=""
                   width={48}
                   height={48}

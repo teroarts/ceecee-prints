@@ -7,7 +7,7 @@ import { formatPrice, useCart } from "@/lib/cart";
 import { useToast } from "@/hooks/use-toast";
 import { ProductCard } from "@/components/store/product-card";
 import { ImageLightbox, ZoomHint } from "@/components/store/image-lightbox";
-import { cn } from "@/lib/utils";
+import { cn, resolveImage } from "@/lib/utils";
 
 export default function ProductDetail() {
   const { slug } = useParams<{ slug: string }>();
@@ -81,7 +81,7 @@ export default function ProductDetail() {
           data-testid="button-enlarge-image"
         >
           <img
-            src={product.image}
+            src={resolveImage(product.image)}
             alt={product.name}
             width={1000}
             height={1000}
@@ -93,7 +93,7 @@ export default function ProductDetail() {
         </button>
 
         <ImageLightbox
-          src={product.image}
+          src={resolveImage(product.image)}
           alt={product.name}
           open={lightboxOpen}
           onClose={() => setLightboxOpen(false)}

@@ -1,6 +1,7 @@
 import { Link } from "wouter";
 import type { Product } from "@shared/products";
 import { formatPrice } from "@/lib/cart";
+import { resolveImage } from "@/lib/utils";
 
 export function ProductCard({ product, index = 0 }: { product: Product; index?: number }) {
   return (
@@ -13,7 +14,7 @@ export function ProductCard({ product, index = 0 }: { product: Product; index?: 
       <article className="overflow-hidden rounded-lg border border-card-border bg-card transition-shadow duration-300 group-hover:shadow-lg">
         <div className="aspect-square overflow-hidden bg-muted">
           <img
-            src={product.image}
+            src={resolveImage(product.image)}
             alt={product.name}
             width={1000}
             height={1000}

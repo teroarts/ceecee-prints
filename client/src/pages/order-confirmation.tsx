@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Check, Package } from "lucide-react";
 import { formatPrice } from "@/lib/cart";
 import { Skeleton } from "@/components/ui/skeleton";
+import { resolveImage } from "@/lib/utils";
 
 type OrderResponse = {
   orderNumber: string;
@@ -102,7 +103,7 @@ export default function OrderConfirmation() {
               <li key={`${item.productId}-${item.size}`} className="flex items-center gap-3 py-3">
                 {item.image && (
                   <img
-                    src={item.image}
+                    src={resolveImage(item.image)}
                     alt=""
                     width={44}
                     height={44}

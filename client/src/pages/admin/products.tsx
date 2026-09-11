@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { apiRequest } from "@/lib/queryClient";
 import { formatPrice } from "@/lib/cart";
+import { resolveImage } from "@/lib/utils";
 
 type ProductForm = {
   name: string;
@@ -213,7 +214,7 @@ export default function AdminProducts() {
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">
                     <img
-                      src={product.image}
+                      src={resolveImage(product.image)}
                       alt=""
                       width={40}
                       height={40}
