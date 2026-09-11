@@ -69,6 +69,14 @@ export interface IStorage {
   ): Promise<OrderRecord | undefined>;
 
   // products
+  /**
+   * Decrements tracked stock for the given items. Returns the name of the
+   * first product that could not be fulfilled (insufficient stock), or null
+   * on success. Untracked products (stock = null) are skipped.
+   */
+  decrementStock(
+    items: { productId: string; quantity: number }[],
+  ): Promise<string | null>;
   listProducts(): Promise<Product[]>;
   getProductById(id: string): Promise<Product | undefined>;
   createProduct(input: ProductInput): Promise<Product>;

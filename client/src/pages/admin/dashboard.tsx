@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { formatPrice } from "@/lib/cart";
+import type { Product } from "@shared/products";
 
 type Stats = {
   orderCount: number;
@@ -36,16 +37,25 @@ type Stats = {
   storageMode: "postgres" | "memory";
 };
 
+type InventoryProduct = Pick<Product, "id" | "name" | "stock">;
+
 export default function AdminDashboard() {
   useEffect(() => {
     document.title = "Dashboard | CeeCee Prints Admin";
   }, []);
 
-  const { data: stats, isLoading } = useQuery<Stats>({
+  const { data: stats } = useQuery<Stats>({
     queryKey: ["/api/admin/stats"],
   });
 
-  if (isLoading || !stats) {
+  const { data: inventoryProducts } = useQuery<InventoryProduct[]>({
+    queryKey: ["/api/admin/products"],
+  });
+  const tracked = (inventoryProducts ?? []).filter((p) => p.stock != null);
+  tracked.sort((a, b) => (a.stock ?? 0) - (b.stock ?? 0));
+  const soldOutCount = tracked.filter((p) => p.stock === 0).length;
+
+  if (!stats) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-8 w-48" />
@@ -235,6 +245,57 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Inventory</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {tracked.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No products are tracking stock yet. Open Products and set
+              “Units in stock” for each design to see live inventory here.
+            </p>
+          ) : (
+            <>
+              <p className="mb-2 text-xs text-muted-foreground">
+                {tracked.length} tracked product{tracked.length === 1 ? "" : "s"}
+                {soldOutCount > 0
+                  ? ` · ${soldOutCount} sold out`
+                  : ""}
+              </p>
+              <ul className="divide-y divide-border/70">
+                {tracked.map((p) => (
+                  <li
+                    key={p.id}
+                    className="flex items-center justify-between gap-3 py-2.5"
+                  >
+                    <span className="truncate text-sm font-medium">{p.name}</span>
+                    {p.stock === 0 ? (
+                      <span className="inline-flex shrink-0 items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700 dark:bg-red-950 dark:text-red-300">
+                        Out of stock
+                      </span>
+                    ) : (
+                      <span
+                        className={
+                          "shrink-0 text-sm tabular-nums " +
+                          ((p.stock ?? 0) <= 5
+                            ? "font-semibold text-amber-600 dark:text-amber-400"
+                            : "text-muted-foreground")
+                        }
+                      >
+                        {(p.stock ?? 0) <= 5
+                          ? `Only ${p.stock} left`
+                          : `${p.stock} in stock`}
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

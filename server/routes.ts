@@ -84,12 +84,17 @@ export function registerRoutes(app: Express, storage: IStorage): void {
     const snapshots: OrderItemSnapshot[] = [];
     for (const item of items) {
       const product = byId.get(item.productId);
-      if (!product || !product.inStock) {
+      if (!product || !product.inStock || product.stock === 0) {
         return res
           .status(400)
           .json({ message: `Unavailable product: ${item.productId}` });
       }
       const quantity = Math.max(1, Math.min(20, Math.floor(item.quantity)));
+      if (product.stock != null && product.stock < quantity) {
+        return res.status(400).json({
+          message: `Only ${product.stock} left of ${product.name}`,
+        });
+      }
       subtotal += product.price * quantity;
       snapshots.push({
         productId: product.id,
@@ -107,14 +112,40 @@ export function registerRoutes(app: Express, storage: IStorage): void {
       Math.random() * 90 + 10,
     )}`;
 
-    const order = await storage.createOrder({
-      ...parsed.data,
-      items: JSON.stringify(snapshots),
-      orderNumber,
-      subtotal,
-      shipping,
-      total: subtotal + shipping,
-    });
+    // Reserve inventory before writing the order; if a concurrent order
+    // took the last unit, reject politely instead of overselling.
+    const soldOut = await storage.decrementStock(
+      snapshots.map((snap) => ({
+        productId: snap.productId,
+        quantity: snap.quantity,
+      })),
+    );
+    if (soldOut) {
+      return res.status(409).json({
+        message: `${soldOut} just sold out — please adjust your cart`,
+      });
+    }
+
+    let order;
+    try {
+      order = await storage.createOrder({
+        ...parsed.data,
+        items: JSON.stringify(snapshots),
+        orderNumber,
+        subtotal,
+        shipping,
+        total: subtotal + shipping,
+      });
+    } catch (error) {
+      // Give the reserved units back if the order write fails.
+      await storage.decrementStock(
+        snapshots.map((snap) => ({
+          productId: snap.productId,
+          quantity: -snap.quantity,
+        })),
+      );
+      throw error;
+    }
 
     return res.status(201).json(order);
   });

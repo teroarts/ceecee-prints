@@ -28,6 +28,7 @@ function rowToProduct(row: ProductRow): Product {
     sizes: JSON.parse(row.sizes) as string[],
     featured: row.featured,
     inStock: row.inStock,
+    stock: row.stock ?? null,
     details: JSON.parse(row.details) as string[],
   };
 }
@@ -135,6 +136,7 @@ export class PostgresStorage implements IStorage {
         sizes: JSON.stringify(input.sizes),
         featured: input.featured,
         inStock: input.inStock,
+        stock: input.stock ?? null,
         details: JSON.stringify(input.details),
         sortOrder: input.sortOrder,
       })
@@ -155,6 +157,7 @@ export class PostgresStorage implements IStorage {
     if (patch.sizes !== undefined) values.sizes = JSON.stringify(patch.sizes);
     if (patch.featured !== undefined) values.featured = patch.featured;
     if (patch.inStock !== undefined) values.inStock = patch.inStock;
+    if (patch.stock !== undefined) values.stock = patch.stock;
     if (patch.details !== undefined)
       values.details = JSON.stringify(patch.details);
     if (patch.sortOrder !== undefined) values.sortOrder = patch.sortOrder;
@@ -165,6 +168,40 @@ export class PostgresStorage implements IStorage {
       .where(eq(productsTable.id, id))
       .returning();
     return row ? rowToProduct(row) : undefined;
+  }
+
+  async decrementStock(
+    items: { productId: string; quantity: number }[],
+  ): Promise<string | null> {
+    // Merge quantities per product, then decrement with a floor guard so a
+    // race between two orders can never push stock negative. If any product
+    // comes up short, the earlier decrements in this batch are reversed.
+    const totals = new Map<string, number>();
+    for (const { productId, quantity } of items) {
+      totals.set(productId, (totals.get(productId) ?? 0) + quantity);
+    }
+    const done: { productId: string; quantity: number }[] = [];
+    for (const [productId, quantity] of Array.from(totals.entries())) {
+      const [row] = await this.sql`
+        UPDATE products SET stock = stock - ${quantity}, updated_at = now()
+        WHERE id = ${productId} AND stock IS NOT NULL AND stock >= ${quantity}
+        RETURNING name`.catch(() => []);
+      if (!row) {
+        const [existing] = await this.sql`
+          SELECT name, stock FROM products WHERE id = ${productId}`;
+        // Untracked (NULL) or missing products are skipped, not failed.
+        if (!existing || existing.stock == null) continue;
+        const failedName = existing.name;
+        for (const d of done) {
+          await this.sql`
+            UPDATE products SET stock = stock + ${d.quantity}
+            WHERE id = ${d.productId}`;
+        }
+        return failedName;
+      }
+      done.push({ productId, quantity });
+    }
+    return null;
   }
 
   async deleteProduct(id: string): Promise<boolean> {

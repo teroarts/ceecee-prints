@@ -19,6 +19,11 @@ export type Product = {
   sizes: string[];
   featured: boolean;
   inStock: boolean;
+  /**
+   * Units on hand. null/undefined means stock is not tracked for this
+   * product (always sellable); 0 means sold out.
+   */
+  stock?: number | null;
   details: string[];
 };
 

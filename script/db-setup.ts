@@ -32,6 +32,7 @@ async function main() {
       sizes text NOT NULL,
       featured boolean NOT NULL DEFAULT false,
       in_stock boolean NOT NULL DEFAULT true,
+      stock integer,
       details text NOT NULL,
       sort_order integer NOT NULL DEFAULT 0,
       created_at timestamptz NOT NULL DEFAULT now(),
@@ -56,6 +57,9 @@ async function main() {
       payment_status text NOT NULL DEFAULT 'unpaid',
       created_at timestamptz NOT NULL DEFAULT now()
     )`;
+
+  // Migration path for databases created before stock tracking existed.
+  await sql`ALTER TABLE products ADD COLUMN IF NOT EXISTS stock integer`;
 
   const existing = await sql`SELECT count(*)::int AS n FROM products`;
   if (existing[0].n === 0) {

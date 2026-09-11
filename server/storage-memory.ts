@@ -81,6 +81,7 @@ export class MemoryStorage implements IStorage {
       sizes: input.sizes,
       featured: input.featured,
       inStock: input.inStock,
+      stock: input.stock ?? null,
       details: input.details,
       sortOrder: input.sortOrder,
     };
@@ -102,6 +103,29 @@ export class MemoryStorage implements IStorage {
     };
     this.products[index] = updated;
     return updated;
+  }
+
+  async decrementStock(
+    items: { productId: string; quantity: number }[],
+  ): Promise<string | null> {
+    const totals = new Map<string, number>();
+    for (const { productId, quantity } of items) {
+      totals.set(productId, (totals.get(productId) ?? 0) + quantity);
+    }
+    const done: { product: Product; quantity: number }[] = [];
+    for (const [productId, quantity] of Array.from(totals.entries())) {
+      const product = this.products.find((p) => p.id === productId);
+      if (!product) continue;
+      if (product.stock == null || product.stock < quantity) {
+        for (const d of done) {
+          d.product.stock = (d.product.stock ?? 0) + d.quantity;
+        }
+        return product.name;
+      }
+      product.stock -= quantity;
+      done.push({ product, quantity });
+    }
+    return null;
   }
 
   async deleteProduct(id: string): Promise<boolean> {

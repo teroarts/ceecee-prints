@@ -59,7 +59,8 @@ export default function ProductDetail() {
   }
 
   const oneSize = product.sizes.length === 1;
-  const canAdd = size !== null && product.inStock;
+  const soldOut = !product.inStock || product.stock === 0;
+  const canAdd = size !== null && !soldOut;
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
@@ -179,9 +180,15 @@ export default function ProductDetail() {
                 data-testid="button-add-to-cart"
               >
                 <ShoppingBag className="h-4 w-4" aria-hidden />
-                {product.inStock ? "Add to cart" : "Sold out"}
+                {soldOut ? "Sold out" : "Add to cart"}
               </button>
             </div>
+
+            {product.stock != null && product.stock > 0 && product.stock <= 5 && (
+              <p className="-mt-3 text-sm font-medium text-amber-600 dark:text-amber-400">
+                Only {product.stock} left in stock.
+              </p>
+            )}
 
             {size === null && !oneSize && (
               <p className="-mt-3 text-sm text-muted-foreground" data-testid="text-size-hint">

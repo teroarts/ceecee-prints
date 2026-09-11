@@ -37,6 +37,7 @@ type ProductForm = {
   image: string;
   featured: boolean;
   inStock: boolean;
+  stock: string; // "" = untracked
 };
 
 const EMPTY_FORM: ProductForm = {
@@ -47,6 +48,7 @@ const EMPTY_FORM: ProductForm = {
   image: "",
   featured: false,
   inStock: true,
+  stock: "",
 };
 
 export default function AdminProducts() {
@@ -86,6 +88,7 @@ export default function AdminProducts() {
       image: product.image,
       featured: product.featured,
       inStock: product.inStock,
+      stock: product.stock == null ? "" : String(product.stock),
     });
     setFormError(null);
     setDialogOpen(true);
@@ -143,6 +146,15 @@ export default function AdminProducts() {
       setFormError("Enter a price of at least $1.00.");
       return;
     }
+    let stock: number | null = null;
+    if (form.stock.trim() !== "") {
+      const parsedStock = Math.floor(Number(form.stock));
+      if (!Number.isFinite(parsedStock) || parsedStock < 0) {
+        setFormError("Stock must be a whole number of 0 or more.");
+        return;
+      }
+      stock = parsedStock;
+    }
     save.mutate({
       name: form.name,
       description: form.description,
@@ -151,6 +163,7 @@ export default function AdminProducts() {
       image: form.image,
       featured: form.featured,
       inStock: form.inStock,
+      stock,
     });
   };
 
@@ -187,6 +200,7 @@ export default function AdminProducts() {
               <th className="px-4 py-3 text-right">Price</th>
               <th className="px-4 py-3 text-center">Featured</th>
               <th className="px-4 py-3 text-center">In stock</th>
+              <th className="px-4 py-3 text-right">Units left</th>
               <th className="px-4 py-3 text-right">Actions</th>
             </tr>
           </thead>
@@ -239,6 +253,19 @@ export default function AdminProducts() {
                       aria-label={`Toggle stock for ${product.name}`}
                     />
                   </div>
+                </td>
+                <td className="px-4 py-3 text-right tabular-nums">
+                  {product.stock == null ? (
+                    <span className="text-muted-foreground">—</span>
+                  ) : product.stock === 0 ? (
+                    <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700 dark:bg-red-950 dark:text-red-300">
+                      Sold out
+                    </span>
+                  ) : (
+                    <span className={product.stock <= 5 ? "font-semibold text-amber-600 dark:text-amber-400" : ""}>
+                      {product.stock}
+                    </span>
+                  )}
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex justify-end gap-1">
@@ -353,6 +380,25 @@ export default function AdminProducts() {
               />
               <p className="text-xs text-muted-foreground">
                 Use a full URL for new designs (e.g. an image hosted online).
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="product-stock">Units in stock</Label>
+              <Input
+                id="product-stock"
+                type="number"
+                min="0"
+                step="1"
+                value={form.stock}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, stock: e.target.value }))
+                }
+                placeholder="e.g. 25"
+              />
+              <p className="text-xs text-muted-foreground">
+                Orders reduce this automatically. Leave blank to skip stock
+                tracking; set 0 to mark sold out.
               </p>
             </div>
 

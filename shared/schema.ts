@@ -23,6 +23,8 @@ export const products = pgTable("products", {
   sizes: text("sizes").notNull(),
   featured: boolean("featured").notNull().default(false),
   inStock: boolean("in_stock").notNull().default(true),
+  /** Units on hand; null = stock not tracked */
+  stock: integer("stock"),
   /** JSON-encoded array of detail bullet strings */
   details: text("details").notNull(),
   sortOrder: integer("sort_order").notNull().default(0),
@@ -75,6 +77,13 @@ export const productInputSchema = z.object({
   sizes: z.array(z.string().min(1)).default(TEE_SIZES),
   featured: z.boolean().default(false),
   inStock: z.boolean().default(true),
+  stock: z
+    .number()
+    .int()
+    .min(0)
+    .max(1_000_000)
+    .nullable()
+    .optional(),
   details: z.array(z.string().min(1)).default(TEE_DETAILS),
   sortOrder: z.number().int().min(0).max(9999).default(0),
 });
