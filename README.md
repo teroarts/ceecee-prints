@@ -55,3 +55,8 @@ Without `DATABASE_URL` the app runs in demo mode with an in-memory catalog.
 
 The Vercel project is linked to this repository — pushes to `master` deploy
 to production automatically; pull requests get preview deployments.
+
+Note: `api/index.mjs` is a prebuilt bundle committed on purpose. Vercel's
+zero-config detection only picks up serverless functions that exist in the
+repo at push time, so regenerate it (`npm run build:vercel`) and commit it
+whenever the server code changes and you deploy via git.
