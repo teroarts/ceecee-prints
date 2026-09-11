@@ -26,9 +26,7 @@ export default function CheckoutSuccess() {
 
   useEffect(() => {
     document.title = "Thank you | CeeCee Prints";
-    const hash = window.location.hash;
-    const query = hash.includes("?") ? hash.slice(hash.indexOf("?") + 1) : "";
-    const params = new URLSearchParams(query);
+    const params = new URLSearchParams(window.location.search);
     setSessionId(params.get("session_id"));
   }, []);
 

@@ -83,7 +83,7 @@ function AdminShell({
   const logout = async () => {
     await apiRequest("POST", "/api/admin/logout").catch(() => undefined);
     queryClient.clear();
-    window.location.hash = "#/admin/login";
+    window.location.assign("/admin/login");
   };
 
   return (

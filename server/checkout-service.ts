@@ -158,8 +158,8 @@ export async function createCheckoutSession(
       zip: customer.zip,
       items: encodeItems(items),
     },
-    success_url: `${origin}/#/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${origin}/#/checkout?cancelled=1`,
+    success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${origin}/checkout?cancelled=1`,
   });
 
   if (!session.url) return { error: "Stripe session has no URL", status: 502 };

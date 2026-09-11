@@ -1,6 +1,5 @@
 import { Switch, Route, Router } from "wouter";
 import { useLocation } from "wouter";
-import { useHashLocation as useWouterHashLocation } from "wouter/use-hash-location";
 import { useEffect } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -93,14 +92,6 @@ function AppShell() {
   );
 }
 
-// Stripe's redirect lands on /#/checkout/success?session_id=… — wouter's
-// hash hook keeps the query inside the path, which breaks route matching.
-// Strip it for routing; pages read query params from window.location.hash.
-const useHashLocation = (): [string, (to: string, opts?: { replace?: boolean }) => void] => {
-  const [location, navigate] = useWouterHashLocation();
-  return [location.split("?")[0], navigate];
-};
-
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -108,7 +99,7 @@ function App() {
         <ThemeProvider>
           <CartProvider>
             <Toaster />
-            <Router hook={useHashLocation}>
+            <Router>
               <AppShell />
             </Router>
           </CartProvider>

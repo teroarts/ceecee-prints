@@ -34,7 +34,7 @@ type CheckoutValues = z.infer<typeof checkoutSchema>;
 export default function Checkout() {
   const { items, subtotal, shipping, total, clear } = useCart();
   const [, navigate] = useLocation();
-  const cancelled = window.location.hash.includes("cancelled=1");
+  const cancelled = new URLSearchParams(window.location.search).get("cancelled") === "1";
 
   const { data: checkoutConfig } = useQuery<{ enabled: boolean }>({
     queryKey: ["/api/checkout/config"],
