@@ -37,6 +37,11 @@ function mailFrom(): string {
   );
 }
 
+/** Absolute site URL for links inside emails. */
+export function siteUrl(): string {
+  return process.env.SITE_URL || "https://www.ceeceeprints.com";
+}
+
 export function ownerInbox(): string {
   return process.env.ORDER_NOTIFY_TO || "printsbyceecee@gmail.com";
 }
@@ -94,7 +99,7 @@ export async function sendOrderNotification(
         `Shipping: ${order.shipping === 0 ? "Free" : formatPrice(order.shipping)}`,
         `Total: ${formatPrice(order.total)}`,
         ``,
-        `Manage it in the admin dashboard: /admin/orders`,
+        `Manage it in the admin dashboard: ${siteUrl()}/admin/orders`,
       ].join("\n"),
     });
     return true;
@@ -144,7 +149,7 @@ export async function sendShippedEmail(order: OrderRecord): Promise<boolean> {
         lines,
         tracking,
         ``,
-        `You can check the latest status any time on the tracking page: /track`,
+        `You can check the latest status any time on the tracking page: ${siteUrl()}/track`,
         ``,
         `Thank you for supporting CeeCee Prints!`,
       ].join("\n"),

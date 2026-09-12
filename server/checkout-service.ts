@@ -3,7 +3,7 @@ import Stripe from "stripe";
 import type { IStorage } from "./storage-types";
 import type { OrderItemSnapshot, OrderRecord } from "./storage-types";
 import { FREE_SHIPPING_THRESHOLD, FLAT_SHIPPING } from "../shared/products";
-import { sendOrderNotification } from "./mailer";
+import { sendOrderNotification, mailerConfigured } from "./mailer";
 
 export type CartItem = { productId: string; size: string; quantity: number };
 
@@ -276,10 +276,13 @@ export async function confirmStripeSession(
   });
 
   // Notify the store owner exactly once, no matter how many paths
-  // (success-page confirm + webhook) reach this point.
-  const notify = await storage.markOwnerNotified(orderNumber);
-  if (notify) {
-    await sendOrderNotification(order).catch(() => false);
+  // (success-page confirm + webhook) reach this point. The one-shot flag is
+  // only claimed when SMTP is configured so nothing is silently skipped.
+  if (mailerConfigured()) {
+    const notify = await storage.markOwnerNotified(orderNumber);
+    if (notify) {
+      await sendOrderNotification(order).catch(() => false);
+    }
   }
   return { status: "ok", order };
 }

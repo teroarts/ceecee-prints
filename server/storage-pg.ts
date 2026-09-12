@@ -316,7 +316,9 @@ export class PostgresStorage implements IStorage {
         await this.reverseStock(done);
         return failedName;
       }
-      done.push({ productId, size, quantity });
+      // Legacy total-stock tracking: record without a size so the rollback
+      // path knows to restore the total, not a per-size bucket.
+      done.push({ productId, quantity });
     }
     return null;
   }

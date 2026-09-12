@@ -55313,7 +55313,7 @@ var init_storage_pg = __esm({
             await this.reverseStock(done);
             return failedName;
           }
-          done.push({ productId, size: size2, quantity });
+          done.push({ productId, quantity });
         }
         return null;
       }
@@ -85061,6 +85061,9 @@ function getTransport() {
 function mailFrom() {
   return process.env.MAIL_FROM || `CeeCee Prints <${process.env.SMTP_USER || "printsbyceecee@gmail.com"}>`;
 }
+function siteUrl() {
+  return process.env.SITE_URL || "https://www.ceeceeprints.com";
+}
 function ownerInbox() {
   return process.env.ORDER_NOTIFY_TO || "printsbyceecee@gmail.com";
 }
@@ -85108,7 +85111,7 @@ async function sendOrderNotification(order) {
         `Shipping: ${order.shipping === 0 ? "Free" : formatPrice(order.shipping)}`,
         `Total: ${formatPrice(order.total)}`,
         ``,
-        `Manage it in the admin dashboard: /admin/orders`
+        `Manage it in the admin dashboard: ${siteUrl()}/admin/orders`
       ].join("\n")
     });
     return true;
@@ -85151,7 +85154,7 @@ async function sendShippedEmail(order) {
         lines,
         tracking,
         ``,
-        `You can check the latest status any time on the tracking page: /track`,
+        `You can check the latest status any time on the tracking page: ${siteUrl()}/track`,
         ``,
         `Thank you for supporting CeeCee Prints!`
       ].join("\n")
@@ -85376,9 +85379,11 @@ async function confirmStripeSession(storage2, sessionId) {
     shipping: subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : FLAT_SHIPPING,
     total: subtotal + (subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : FLAT_SHIPPING)
   });
-  const notify = await storage2.markOwnerNotified(orderNumber);
-  if (notify) {
-    await sendOrderNotification(order).catch(() => false);
+  if (mailerConfigured()) {
+    const notify = await storage2.markOwnerNotified(orderNumber);
+    if (notify) {
+      await sendOrderNotification(order).catch(() => false);
+    }
   }
   return { status: "ok", order };
 }
@@ -85582,9 +85587,11 @@ function registerRoutes(app2, storage2) {
       );
       throw error63;
     }
-    const notify = await storage2.markOwnerNotified(orderNumber);
-    if (notify) {
-      await sendOrderNotification(order).catch(() => false);
+    if (mailerConfigured()) {
+      const notify = await storage2.markOwnerNotified(orderNumber);
+      if (notify) {
+        await sendOrderNotification(order).catch(() => false);
+      }
     }
     return res.status(201).json(order);
   });
@@ -85660,7 +85667,20 @@ function registerRoutes(app2, storage2) {
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
     }
-    return res.json(order);
+    return res.json({
+      orderNumber: order.orderNumber,
+      customerName: order.customerName,
+      email: order.email,
+      items: order.items,
+      subtotal: order.subtotal,
+      shipping: order.shipping,
+      total: order.total,
+      orderStatus: order.orderStatus,
+      paymentStatus: order.paymentStatus,
+      carrier: order.carrier ?? null,
+      trackingNumber: order.trackingNumber ?? null,
+      createdAt: order.createdAt
+    });
   });
   const trackSchema = external_exports.object({
     orderNumber: external_exports.string().min(4).max(40),
@@ -85847,7 +85867,7 @@ function registerRoutes(app2, storage2) {
     if (!updated) {
       return res.status(404).json({ message: "Order not found" });
     }
-    if (updated.orderStatus === "shipped") {
+    if (updated.orderStatus === "shipped" && mailerConfigured()) {
       const notify = await storage2.markShippedNotified(updated.orderNumber);
       if (notify) {
         await sendShippedEmail(updated).catch(() => false);

@@ -19,6 +19,7 @@ import {
   stripeEnabled,
 } from "./checkout-service";
 import {
+  mailerConfigured,
   sendContactMessage,
   sendOrderNotification,
   sendShippedEmail,
@@ -139,10 +140,14 @@ export function registerRoutes(app: Express, storage: IStorage): void {
       throw error;
     }
 
-    // Best-effort owner notification (exactly once per order).
-    const notify = await storage.markOwnerNotified(orderNumber);
-    if (notify) {
-      await sendOrderNotification(order).catch(() => false);
+    // Best-effort owner notification (exactly once per order). Only claim
+    // the one-shot flag when SMTP is configured — otherwise an order placed
+    // before email setup would be marked notified with nothing sent.
+    if (mailerConfigured()) {
+      const notify = await storage.markOwnerNotified(orderNumber);
+      if (notify) {
+        await sendOrderNotification(order).catch(() => false);
+      }
     }
 
     return res.status(201).json(order);
@@ -246,7 +251,22 @@ export function registerRoutes(app: Express, storage: IStorage): void {
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
     }
-    return res.json(order);
+    // Sanitized: order numbers are not strong secrets, so the public
+    // response omits the shipping address and internal fields.
+    return res.json({
+      orderNumber: order.orderNumber,
+      customerName: order.customerName,
+      email: order.email,
+      items: order.items,
+      subtotal: order.subtotal,
+      shipping: order.shipping,
+      total: order.total,
+      orderStatus: order.orderStatus,
+      paymentStatus: order.paymentStatus,
+      carrier: order.carrier ?? null,
+      trackingNumber: order.trackingNumber ?? null,
+      createdAt: order.createdAt,
+    });
   });
 
   const trackSchema = z.object({
@@ -479,7 +499,7 @@ export function registerRoutes(app: Express, storage: IStorage): void {
 
     // When an order is marked shipped, email the customer exactly once
     // with the carrier and tracking details (if any were provided).
-    if (updated.orderStatus === "shipped") {
+    if (updated.orderStatus === "shipped" && mailerConfigured()) {
       const notify = await storage.markShippedNotified(updated.orderNumber);
       if (notify) {
         await sendShippedEmail(updated).catch(() => false);
