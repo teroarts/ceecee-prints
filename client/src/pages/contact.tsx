@@ -50,7 +50,7 @@ export default function Contact() {
     } catch {
       toast({
         title: "Message not sent",
-        description: "Something went wrong — email us directly at info@ceeceeprints.com.",
+        description: "Something went wrong — email us directly at printsbyceecee@gmail.com.",
         variant: "destructive",
       });
     } finally {
@@ -135,7 +135,7 @@ export default function Contact() {
             </h2>
             <p className="flex items-center gap-2 text-sm">
               <Mail className="h-4 w-4 shrink-0 text-primary" aria-hidden />
-              info@ceeceeprints.com
+              printsbyceecee@gmail.com
             </p>
           </div>
           <div>

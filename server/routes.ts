@@ -12,11 +12,17 @@ import {
 } from "../shared/products";
 import { dbConfigured, storageMode } from "./storage-resolve";
 import {
+  buildSnapshots,
   createCheckoutSession,
   confirmStripeSession,
   handleStripeWebhook,
   stripeEnabled,
 } from "./checkout-service";
+import {
+  sendContactMessage,
+  sendOrderNotification,
+  sendShippedEmail,
+} from "./mailer";
 import {
   adminAuthConfigured,
   clearSessionCookie,
@@ -27,7 +33,7 @@ import {
 } from "./admin-auth";
 
 /** Contact-form submissions are delivered to this inbox. */
-const CONTACT_RECIPIENT = "schebet12@gmail.com";
+const CONTACT_RECIPIENT = "printsbyceecee@gmail.com";
 
 const contactSchema = z.object({
   name: z.string().min(2),
@@ -83,35 +89,13 @@ export function registerRoutes(app: Express, storage: IStorage): void {
 
     // Build purchase-time snapshots and recompute totals server-side so
     // prices can't be tampered with and history survives product edits.
-    const catalog = await storage.listProducts();
-    const byId = new Map(catalog.map((p) => [p.id, p]));
-
-    let subtotal = 0;
-    const snapshots: OrderItemSnapshot[] = [];
-    for (const item of items) {
-      const product = byId.get(item.productId);
-      if (!product || !product.inStock || product.stock === 0) {
-        return res
-          .status(400)
-          .json({ message: `Unavailable product: ${item.productId}` });
-      }
-      const quantity = Math.max(1, Math.min(20, Math.floor(item.quantity)));
-      if (product.stock != null && product.stock < quantity) {
-        return res.status(400).json({
-          message: `Only ${product.stock} left of ${product.name}`,
-        });
-      }
-      subtotal += product.price * quantity;
-      snapshots.push({
-        productId: product.id,
-        slug: product.slug,
-        name: product.name,
-        size: item.size,
-        quantity,
-        unitPrice: product.price,
-        image: product.image,
-      });
+    // buildSnapshots also enforces per-size stock limits.
+    const built = await buildSnapshots(storage, items);
+    if (!built.ok) {
+      return res.status(400).json({ message: built.reason });
     }
+    const snapshots = built.snapshots;
+    const subtotal = built.subtotal;
 
     const shipping = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : FLAT_SHIPPING;
     const orderNumber = `CC-${Date.now().toString(36).toUpperCase()}${Math.floor(
@@ -123,6 +107,7 @@ export function registerRoutes(app: Express, storage: IStorage): void {
     const soldOut = await storage.decrementStock(
       snapshots.map((snap) => ({
         productId: snap.productId,
+        size: snap.size,
         quantity: snap.quantity,
       })),
     );
@@ -147,10 +132,17 @@ export function registerRoutes(app: Express, storage: IStorage): void {
       await storage.decrementStock(
         snapshots.map((snap) => ({
           productId: snap.productId,
+          size: snap.size,
           quantity: -snap.quantity,
         })),
       );
       throw error;
+    }
+
+    // Best-effort owner notification (exactly once per order).
+    const notify = await storage.markOwnerNotified(orderNumber);
+    if (notify) {
+      await sendOrderNotification(order).catch(() => false);
     }
 
     return res.status(201).json(order);
@@ -257,6 +249,51 @@ export function registerRoutes(app: Express, storage: IStorage): void {
     return res.json(order);
   });
 
+  const trackSchema = z.object({
+    orderNumber: z.string().min(4).max(40),
+    email: z.string().email(),
+  });
+
+  // Customer-facing order tracking. Requires both the order number and the
+  // email used at checkout, and returns a sanitized view (no address).
+  app.post("/api/orders/track", async (req, res) => {
+    const parsed = trackSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res
+        .status(400)
+        .json({ message: "Enter your order number and email" });
+    }
+    const order = await storage.getOrderByNumber(
+      parsed.data.orderNumber.trim().toUpperCase(),
+    );
+    if (!order || order.email.toLowerCase() !== parsed.data.email.toLowerCase()) {
+      return res.status(404).json({
+        message: "No order found for that order number and email",
+      });
+    }
+    let items: OrderItemSnapshot[] = [];
+    try {
+      items = JSON.parse(order.items) as OrderItemSnapshot[];
+    } catch {
+      items = [];
+    }
+    return res.json({
+      orderNumber: order.orderNumber,
+      orderStatus: order.orderStatus,
+      paymentStatus: order.paymentStatus,
+      carrier: order.carrier ?? null,
+      trackingNumber: order.trackingNumber ?? null,
+      createdAt: order.createdAt,
+      items: items.map((i) => ({
+        name: i.name,
+        size: i.size,
+        quantity: i.quantity,
+      })),
+      total: order.total,
+      shipping: order.shipping,
+    });
+  });
+
   app.post("/api/contact", async (req, res) => {
     const parsed = contactSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -265,36 +302,13 @@ export function registerRoutes(app: Express, storage: IStorage): void {
         .json({ message: "Invalid message details", errors: parsed.error.issues });
     }
 
-    const resendKey = process.env.RESEND_API_KEY;
-
-    if (resendKey) {
-      try {
-        const response = await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${resendKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            from: process.env.CONTACT_FROM || "CeeCee Prints <onboarding@resend.dev>",
-            to: [CONTACT_RECIPIENT],
-            reply_to: parsed.data.email,
-            subject: `CeeCee Prints — new message from ${parsed.data.name}`,
-            text: `Name: ${parsed.data.name}\nEmail: ${parsed.data.email}\n\n${parsed.data.message}`,
-          }),
-        });
-        if (!response.ok) {
-          throw new Error(`Resend responded ${response.status}`);
-        }
-        return res.json({ sent: true });
-      } catch (error) {
-        console.error("Contact form delivery failed (Resend):", error);
-        return res
-          .status(502)
-          .json({ message: "Could not send the message right now" });
-      }
+    // Preferred path: Gmail SMTP straight to the store inbox.
+    const sent = await sendContactMessage(parsed.data).catch(() => false);
+    if (sent) {
+      return res.json({ sent: true });
     }
 
+    // Fallback when SMTP is not configured: FormSubmit relay.
     try {
       const response = await fetch(
         `https://formsubmit.co/ajax/${CONTACT_RECIPIENT}`,
@@ -362,9 +376,11 @@ export function registerRoutes(app: Express, storage: IStorage): void {
     const revenue = active.reduce((sum, o) => sum + o.total, 0);
     const paid = active.filter((o) => o.paymentStatus === "paid");
     const paidRevenue = paid.reduce((sum, o) => sum + o.total, 0);
-    const pendingCount = active.filter((o) => o.orderStatus === "pending").length;
+    const pendingCount = active.filter(
+      (o) => o.orderStatus === "pending" || o.orderStatus === "processing",
+    ).length;
     const fulfilledCount = active.filter(
-      (o) => o.orderStatus === "fulfilled",
+      (o) => o.orderStatus === "fulfilled" || o.orderStatus === "delivered",
     ).length;
     const avgOrderValue = active.length
       ? Math.round(revenue / active.length)
@@ -435,6 +451,8 @@ export function registerRoutes(app: Express, storage: IStorage): void {
   const statusPatchSchema = z.object({
     orderStatus: z.enum(ORDER_STATUSES as [string, ...string[]]).optional(),
     paymentStatus: z.enum(PAYMENT_STATUSES as [string, ...string[]]).optional(),
+    carrier: z.string().trim().max(60).nullable().optional(),
+    trackingNumber: z.string().trim().max(80).nullable().optional(),
   });
 
   app.patch("/api/admin/orders/:orderNumber", requireAdmin, async (req, res) => {
@@ -443,7 +461,12 @@ export function registerRoutes(app: Express, storage: IStorage): void {
       return res.status(400).json({ message: "Invalid status update" });
     }
     const patch = parsed.data as OrderStatusPatch;
-    if (patch.orderStatus === undefined && patch.paymentStatus === undefined) {
+    if (
+      patch.orderStatus === undefined &&
+      patch.paymentStatus === undefined &&
+      patch.carrier === undefined &&
+      patch.trackingNumber === undefined
+    ) {
       return res.status(400).json({ message: "Nothing to update" });
     }
     const updated = await storage.updateOrderStatus(
@@ -453,6 +476,16 @@ export function registerRoutes(app: Express, storage: IStorage): void {
     if (!updated) {
       return res.status(404).json({ message: "Order not found" });
     }
+
+    // When an order is marked shipped, email the customer exactly once
+    // with the carrier and tracking details (if any were provided).
+    if (updated.orderStatus === "shipped") {
+      const notify = await storage.markShippedNotified(updated.orderNumber);
+      if (notify) {
+        await sendShippedEmail(updated).catch(() => false);
+      }
+    }
+
     res.json(updated);
   });
 

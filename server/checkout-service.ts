@@ -3,6 +3,7 @@ import Stripe from "stripe";
 import type { IStorage } from "./storage-types";
 import type { OrderItemSnapshot, OrderRecord } from "./storage-types";
 import { FREE_SHIPPING_THRESHOLD, FLAT_SHIPPING } from "../shared/products";
+import { sendOrderNotification } from "./mailer";
 
 export type CartItem = { productId: string; size: string; quantity: number };
 
@@ -58,11 +59,24 @@ export async function buildSnapshots(
   let subtotal = 0;
   for (const item of items) {
     const product = byId.get(item.productId);
-    if (!product || !product.inStock || product.stock === 0) {
+    if (!product || !product.inStock) {
       return { ok: false, reason: `Unavailable product: ${item.productId}` };
     }
     const quantity = Math.max(1, Math.min(20, Math.floor(item.quantity)));
-    if (product.stock != null && product.stock < quantity) {
+    if (product.stockBySize != null) {
+      const available = product.stockBySize[item.size] ?? 0;
+      if (available < quantity) {
+        return {
+          ok: false,
+          reason:
+            available === 0
+              ? `${product.name} (size ${item.size}) is sold out`
+              : `Only ${available} left of ${product.name} (size ${item.size})`,
+        };
+      }
+    } else if (product.stock != null && product.stock === 0) {
+      return { ok: false, reason: `Unavailable product: ${item.productId}` };
+    } else if (product.stock != null && product.stock < quantity) {
       return {
         ok: false,
         reason: `Only ${product.stock} left of ${product.name}`,
@@ -233,7 +247,11 @@ export async function confirmStripeSession(
   }
 
   const soldOut = await storage.decrementStock(
-    snapshots.map((s) => ({ productId: s.productId, quantity: s.quantity })),
+    snapshots.map((s) => ({
+      productId: s.productId,
+      size: s.size,
+      quantity: s.quantity,
+    })),
   );
   if (soldOut) {
     console.warn(
@@ -256,6 +274,13 @@ export async function confirmStripeSession(
     shipping: subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : FLAT_SHIPPING,
     total: subtotal + (subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : FLAT_SHIPPING),
   });
+
+  // Notify the store owner exactly once, no matter how many paths
+  // (success-page confirm + webhook) reach this point.
+  const notify = await storage.markOwnerNotified(orderNumber);
+  if (notify) {
+    await sendOrderNotification(order).catch(() => false);
+  }
   return { status: "ok", order };
 }
 

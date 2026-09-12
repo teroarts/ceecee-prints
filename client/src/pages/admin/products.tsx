@@ -1,7 +1,8 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Pencil, Plus, Star, Trash2 } from "lucide-react";
+import { Minus, Pencil, Plus, Star, Trash2 } from "lucide-react";
 import type { Product } from "@shared/products";
+import { TEE_SIZES } from "@shared/products";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,7 +29,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { apiRequest } from "@/lib/queryClient";
 import { formatPrice } from "@/lib/cart";
-import { resolveImage } from "@/lib/utils";
+import { resolveImage, cn } from "@/lib/utils";
+
+type StockMode = "untracked" | "total" | "perSize";
 
 type ProductForm = {
   name: string;
@@ -39,6 +42,9 @@ type ProductForm = {
   featured: boolean;
   inStock: boolean;
   stock: string; // "" = untracked
+  stockMode: StockMode;
+  /** Per-size units, as strings for controlled inputs ("" = 0) */
+  stockBySize: Record<string, string>;
 };
 
 const EMPTY_FORM: ProductForm = {
@@ -50,6 +56,8 @@ const EMPTY_FORM: ProductForm = {
   featured: false,
   inStock: true,
   stock: "",
+  stockMode: "untracked",
+  stockBySize: {},
 };
 
 export default function AdminProducts() {
@@ -81,6 +89,13 @@ export default function AdminProducts() {
 
   const openEdit = (product: Product) => {
     setEditing(product);
+    const sizeStock: Record<string, string> = {};
+    for (const s of product.sizes.length ? product.sizes : TEE_SIZES) {
+      sizeStock[s] =
+        product.stockBySize != null
+          ? String(product.stockBySize[s] ?? 0)
+          : "";
+    }
     setForm({
       name: product.name,
       description: product.description,
@@ -90,6 +105,13 @@ export default function AdminProducts() {
       featured: product.featured,
       inStock: product.inStock,
       stock: product.stock == null ? "" : String(product.stock),
+      stockMode:
+        product.stockBySize != null
+          ? "perSize"
+          : product.stock == null
+            ? "untracked"
+            : "total",
+      stockBySize: sizeStock,
     });
     setFormError(null);
     setDialogOpen(true);
@@ -148,13 +170,32 @@ export default function AdminProducts() {
       return;
     }
     let stock: number | null = null;
-    if (form.stock.trim() !== "") {
-      const parsedStock = Math.floor(Number(form.stock));
-      if (!Number.isFinite(parsedStock) || parsedStock < 0) {
-        setFormError("Stock must be a whole number of 0 or more.");
-        return;
+    let stockBySize: Record<string, number> | null = null;
+    if (form.stockMode === "total") {
+      if (form.stock.trim() !== "") {
+        const parsedStock = Math.floor(Number(form.stock));
+        if (!Number.isFinite(parsedStock) || parsedStock < 0) {
+          setFormError("Stock must be a whole number of 0 or more.");
+          return;
+        }
+        stock = parsedStock;
       }
-      stock = parsedStock;
+    } else if (form.stockMode === "perSize") {
+      const sizes = editing?.sizes.length ? editing.sizes : TEE_SIZES;
+      stockBySize = {};
+      for (const s of sizes) {
+        const raw = (form.stockBySize[s] ?? "").trim();
+        if (raw === "") {
+          stockBySize[s] = 0;
+          continue;
+        }
+        const parsed = Math.floor(Number(raw));
+        if (!Number.isFinite(parsed) || parsed < 0) {
+          setFormError(`Stock for size ${s} must be a whole number of 0 or more.`);
+          return;
+        }
+        stockBySize[s] = parsed;
+      }
     }
     save.mutate({
       name: form.name,
@@ -165,6 +206,7 @@ export default function AdminProducts() {
       featured: form.featured,
       inStock: form.inStock,
       stock,
+      stockBySize,
     });
   };
 
@@ -256,7 +298,25 @@ export default function AdminProducts() {
                   </div>
                 </td>
                 <td className="px-4 py-3 text-right tabular-nums">
-                  {product.stock == null ? (
+                  {product.stockBySize != null ? (
+                    <span className="inline-flex flex-wrap justify-end gap-x-2 gap-y-0.5 text-xs">
+                      {Object.entries(product.stockBySize).map(([s, n]) => (
+                        <span
+                          key={s}
+                          className={
+                            n === 0
+                              ? "font-semibold text-red-600 dark:text-red-400"
+                              : n <= 2
+                                ? "font-semibold text-amber-600 dark:text-amber-400"
+                                : ""
+                          }
+                          title={n === 0 ? `Size ${s} sold out` : `Size ${s}: ${n} left`}
+                        >
+                          {s}:{n}
+                        </span>
+                      ))}
+                    </span>
+                  ) : product.stock == null ? (
                     <span className="text-muted-foreground">—</span>
                   ) : product.stock === 0 ? (
                     <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700 dark:bg-red-950 dark:text-red-300">
@@ -385,22 +445,134 @@ export default function AdminProducts() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="product-stock">Units in stock</Label>
-              <Input
-                id="product-stock"
-                type="number"
-                min="0"
-                step="1"
-                value={form.stock}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, stock: e.target.value }))
-                }
-                placeholder="e.g. 25"
-              />
-              <p className="text-xs text-muted-foreground">
-                Orders reduce this automatically. Leave blank to skip stock
-                tracking; set 0 to mark sold out.
-              </p>
+              <Label>Inventory tracking</Label>
+              <div className="grid gap-2 sm:grid-cols-3">
+                {(
+                  [
+                    ["untracked", "Don't track"],
+                    ["total", "Total units"],
+                    ["perSize", "Units per size"],
+                  ] as [StockMode, string][]
+                ).map(([mode, label]) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() =>
+                      setForm((f) => ({ ...f, stockMode: mode }))
+                    }
+                    aria-pressed={form.stockMode === mode}
+                    className={cn(
+                      "h-9 rounded-md border px-2 text-sm font-medium transition-colors",
+                      form.stockMode === mode
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border bg-card text-foreground hover:border-foreground/40",
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              {form.stockMode === "total" && (
+                <div className="space-y-2 pt-1">
+                  <Label htmlFor="product-stock">Units in stock</Label>
+                  <Input
+                    id="product-stock"
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={form.stock}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, stock: e.target.value }))
+                    }
+                    placeholder="e.g. 25"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Orders reduce this automatically. Leave blank to skip stock
+                    tracking; set 0 to mark sold out.
+                  </p>
+                </div>
+              )}
+
+              {form.stockMode === "perSize" && (
+                <div className="space-y-2 pt-1" data-testid="stock-per-size">
+                  {(editing?.sizes.length ? editing.sizes : TEE_SIZES).map(
+                    (s) => (
+                      <div
+                        key={s}
+                        className="flex items-center justify-between gap-3"
+                      >
+                        <span className="w-8 text-sm font-semibold">{s}</span>
+                        <div className="flex h-9 items-center rounded-md border border-border">
+                          <button
+                            type="button"
+                            aria-label={`Remove one unit of size ${s}`}
+                            onClick={() =>
+                              setForm((f) => ({
+                                ...f,
+                                stockBySize: {
+                                  ...f.stockBySize,
+                                  [s]: String(
+                                    Math.max(0, Number(f.stockBySize[s] ?? 0) - 1),
+                                  ),
+                                },
+                              }))
+                            }
+                            className="flex h-full w-9 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
+                          >
+                            <Minus className="h-3.5 w-3.5" aria-hidden />
+                          </button>
+                          <input
+                            aria-label={`Units of size ${s}`}
+                            type="number"
+                            min="0"
+                            step="1"
+                            value={form.stockBySize[s] ?? ""}
+                            onChange={(e) =>
+                              setForm((f) => ({
+                                ...f,
+                                stockBySize: {
+                                  ...f.stockBySize,
+                                  [s]: e.target.value,
+                                },
+                              }))
+                            }
+                            className="h-full w-16 border-x border-border bg-transparent text-center text-sm tabular-nums outline-none"
+                          />
+                          <button
+                            type="button"
+                            aria-label={`Add one unit of size ${s}`}
+                            onClick={() =>
+                              setForm((f) => ({
+                                ...f,
+                                stockBySize: {
+                                  ...f.stockBySize,
+                                  [s]: String(
+                                    (Number(f.stockBySize[s] ?? 0) || 0) + 1,
+                                  ),
+                                },
+                              }))
+                            }
+                            className="flex h-full w-9 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
+                          >
+                            <Plus className="h-3.5 w-3.5" aria-hidden />
+                          </button>
+                        </div>
+                      </div>
+                    ),
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Each sale reduces the size the customer picked. A size at 0
+                    shows as sold out on the storefront. Blank counts as 0.
+                  </p>
+                </div>
+              )}
+
+              {form.stockMode === "untracked" && (
+                <p className="text-xs text-muted-foreground">
+                  Customers can buy any quantity — nothing is counted down.
+                </p>
+              )}
             </div>
 
             <div className="flex flex-wrap gap-6">

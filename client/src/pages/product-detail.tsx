@@ -60,7 +60,21 @@ export default function ProductDetail() {
 
   const oneSize = product.sizes.length === 1;
   const soldOut = !product.inStock || product.stock === 0;
-  const canAdd = size !== null && !soldOut;
+
+  // Per-size stock: when the product tracks units per size, a size with 0
+  // left is sold out even if other sizes are still available.
+  const sizeAvailable = (s: string): number | null => {
+    if (product.stockBySize != null) return product.stockBySize[s] ?? 0;
+    return product.stock ?? null;
+  };
+  const sizeSoldOut = (s: string) => {
+    const available = sizeAvailable(s);
+    return available != null && available === 0;
+  };
+  const selectedAvailable = size != null ? sizeAvailable(size) : null;
+  const selectedSoldOut =
+    soldOut || (size != null && sizeSoldOut(size));
+  const canAdd = size !== null && !selectedSoldOut;
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
@@ -119,23 +133,29 @@ export default function ProductDetail() {
                 Size {oneSize && <span className="font-normal text-muted-foreground">— one size</span>}
               </legend>
               <div className="flex flex-wrap gap-2">
-                {product.sizes.map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => setSize(s)}
-                    aria-pressed={size === s}
-                    className={cn(
-                      "h-10 min-w-11 rounded-md border px-3 text-sm font-medium transition-colors focus-visible:outline-2",
-                      size === s
-                        ? "border-primary bg-primary text-primary-foreground"
-                        : "border-border bg-card text-foreground hover:border-foreground/40",
-                    )}
-                    data-testid={`button-size-${s.toLowerCase().replace(/\s/g, "-")}`}
-                  >
-                    {s}
-                  </button>
-                ))}
+                {product.sizes.map((s) => {
+                  const out = sizeSoldOut(s);
+                  return (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => setSize(s)}
+                      disabled={out}
+                      aria-pressed={size === s}
+                      title={out ? `Size ${s} is sold out` : undefined}
+                      className={cn(
+                        "h-10 min-w-11 rounded-md border px-3 text-sm font-medium transition-colors focus-visible:outline-2 disabled:cursor-not-allowed disabled:opacity-40",
+                        size === s
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-border bg-card text-foreground hover:border-foreground/40",
+                        out && "line-through",
+                      )}
+                      data-testid={`button-size-${s.toLowerCase().replace(/\s/g, "-")}`}
+                    >
+                      {s}
+                    </button>
+                  );
+                })}
               </div>
             </fieldset>
 
@@ -156,7 +176,11 @@ export default function ProductDetail() {
                 </span>
                 <button
                   type="button"
-                  onClick={() => setQuantity((q) => Math.min(20, q + 1))}
+                  onClick={() =>
+                    setQuantity((q) =>
+                      Math.min(20, selectedAvailable ?? 20, q + 1),
+                    )
+                  }
                   aria-label="Increase quantity"
                   className="flex h-full w-11 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
                   data-testid="button-quantity-increase"
@@ -180,15 +204,22 @@ export default function ProductDetail() {
                 data-testid="button-add-to-cart"
               >
                 <ShoppingBag className="h-4 w-4" aria-hidden />
-                {soldOut ? "Sold out" : "Add to cart"}
+                {soldOut
+                  ? "Sold out"
+                  : selectedSoldOut
+                    ? `Size ${size} is sold out`
+                  : "Add to cart"}
               </button>
             </div>
 
-            {product.stock != null && product.stock > 0 && product.stock <= 5 && (
-              <p className="-mt-3 text-sm font-medium text-amber-600 dark:text-amber-400">
-                Only {product.stock} left in stock.
-              </p>
-            )}
+            {selectedAvailable != null &&
+              selectedAvailable > 0 &&
+              selectedAvailable <= 5 && (
+                <p className="-mt-3 text-sm font-medium text-amber-600 dark:text-amber-400">
+                  Only {selectedAvailable} left
+                  {oneSize ? "" : ` in size ${size}`}.
+                </p>
+              )}
 
             {size === null && !oneSize && (
               <p className="-mt-3 text-sm text-muted-foreground" data-testid="text-size-hint">

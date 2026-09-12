@@ -1,6 +1,6 @@
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
-import { asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, isNull } from "drizzle-orm";
 import type { Product } from "../shared/products";
 import type { ProductInput } from "../shared/schema";
 import { products as productsTable, orders as ordersTable } from "../shared/schema";
@@ -29,8 +29,24 @@ function rowToProduct(row: ProductRow): Product {
     featured: row.featured,
     inStock: row.inStock,
     stock: row.stock ?? null,
+    stockBySize: parseStockBySize(row.stockBySize),
     details: JSON.parse(row.details) as string[],
   };
+}
+
+function parseStockBySize(raw: string | null): Record<string, number> | null {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const out: Record<string, number> = {};
+    for (const [size, value] of Object.entries(parsed)) {
+      const n = Number(value);
+      if (Number.isFinite(n) && n >= 0) out[size] = Math.floor(n);
+    }
+    return Object.keys(out).length > 0 ? out : null;
+  } catch {
+    return null;
+  }
 }
 
 function rowToOrder(row: OrderRow): OrderRecord {
@@ -38,6 +54,12 @@ function rowToOrder(row: OrderRow): OrderRecord {
     ...row,
     orderStatus: row.orderStatus as OrderStatus,
     paymentStatus: row.paymentStatus as PaymentStatus,
+    ownerNotifiedAt: row.ownerNotifiedAt
+      ? row.ownerNotifiedAt.toISOString()
+      : null,
+    shippedNotifiedAt: row.shippedNotifiedAt
+      ? row.shippedNotifiedAt.toISOString()
+      : null,
     createdAt: row.createdAt.toISOString(),
   };
 }
@@ -120,6 +142,38 @@ export class PostgresStorage implements IStorage {
     return row ? rowToOrder(row) : undefined;
   }
 
+  async markOwnerNotified(
+    orderNumber: string,
+  ): Promise<OrderRecord | undefined> {
+    const [row] = await this.db
+      .update(ordersTable)
+      .set({ ownerNotifiedAt: new Date() })
+      .where(
+        and(
+          eq(ordersTable.orderNumber, orderNumber),
+          isNull(ordersTable.ownerNotifiedAt),
+        ),
+      )
+      .returning();
+    return row ? rowToOrder(row) : undefined;
+  }
+
+  async markShippedNotified(
+    orderNumber: string,
+  ): Promise<OrderRecord | undefined> {
+    const [row] = await this.db
+      .update(ordersTable)
+      .set({ shippedNotifiedAt: new Date() })
+      .where(
+        and(
+          eq(ordersTable.orderNumber, orderNumber),
+          isNull(ordersTable.shippedNotifiedAt),
+        ),
+      )
+      .returning();
+    return row ? rowToOrder(row) : undefined;
+  }
+
   async listProducts(): Promise<Product[]> {
     const rows = await this.db
       .select()
@@ -153,6 +207,7 @@ export class PostgresStorage implements IStorage {
         featured: input.featured,
         inStock: input.inStock,
         stock: input.stock ?? null,
+        stockBySize: input.stockBySize != null ? JSON.stringify(input.stockBySize) : null,
         details: JSON.stringify(input.details),
         sortOrder: input.sortOrder,
       })
@@ -174,6 +229,9 @@ export class PostgresStorage implements IStorage {
     if (patch.featured !== undefined) values.featured = patch.featured;
     if (patch.inStock !== undefined) values.inStock = patch.inStock;
     if (patch.stock !== undefined) values.stock = patch.stock;
+    if (patch.stockBySize !== undefined)
+      values.stockBySize =
+        patch.stockBySize != null ? JSON.stringify(patch.stockBySize) : null;
     if (patch.details !== undefined)
       values.details = JSON.stringify(patch.details);
     if (patch.sortOrder !== undefined) values.sortOrder = patch.sortOrder;
@@ -187,37 +245,106 @@ export class PostgresStorage implements IStorage {
   }
 
   async decrementStock(
-    items: { productId: string; quantity: number }[],
+    items: { productId: string; size?: string; quantity: number }[],
   ): Promise<string | null> {
-    // Merge quantities per product, then decrement with a floor guard so a
-    // race between two orders can never push stock negative. If any product
-    // comes up short, the earlier decrements in this batch are reversed.
-    const totals = new Map<string, number>();
-    for (const { productId, quantity } of items) {
-      totals.set(productId, (totals.get(productId) ?? 0) + quantity);
-    }
-    const done: { productId: string; quantity: number }[] = [];
-    for (const [productId, quantity] of Array.from(totals.entries())) {
+    // If any product comes up short, the earlier changes in this batch are
+    // reversed so a multi-item order either reserves everything or nothing.
+    const done: { productId: string; size?: string; quantity: number }[] = [];
+    for (const { productId, size, quantity } of items) {
       const [row] = await this.sql`
+        SELECT name, stock, stock_by_size FROM products
+        WHERE id = ${productId}`.catch(() => []);
+      // Missing products are skipped, not failed.
+      if (!row) continue;
+
+      if (row.stock_by_size != null) {
+        // Per-size tracking: decrement the specific size with an optimistic
+        // lock (the write only lands if the stored JSON is still the copy we
+        // read), retrying a couple of times if another order raced us.
+        let ok = false;
+        for (let attempt = 0; attempt < 3 && !ok; attempt++) {
+          const current = row.stock_by_size;
+          let map: Record<string, number>;
+          try {
+            map = JSON.parse(current) as Record<string, number>;
+          } catch {
+            map = {};
+          }
+          const available = map[size ?? ""] ?? 0;
+          if (quantity > 0 && available < quantity) {
+            const failedName = row.name;
+            await this.reverseStock(done);
+            return failedName;
+          }
+          const next = {
+            ...map,
+            [size ?? ""]: available - quantity,
+          };
+          const updated = await this.sql`
+            UPDATE products SET stock_by_size = ${JSON.stringify(next)}, updated_at = now()
+            WHERE id = ${productId} AND stock_by_size = ${current}
+            RETURNING name`.catch(() => []);
+          if (updated.length > 0) {
+            ok = true;
+            break;
+          }
+          // Lost the race — re-read and try again.
+          const [fresh] = await this.sql`
+            SELECT stock_by_size FROM products WHERE id = ${productId}`;
+          if (fresh) row.stock_by_size = fresh.stock_by_size;
+        }
+        if (!ok) {
+          const failedName = row.name;
+          await this.reverseStock(done);
+          return failedName;
+        }
+        done.push({ productId, size, quantity });
+        continue;
+      }
+
+      // Legacy total-stock tracking.
+      const [updated] = await this.sql`
         UPDATE products SET stock = stock - ${quantity}, updated_at = now()
         WHERE id = ${productId} AND stock IS NOT NULL AND stock >= ${quantity}
         RETURNING name`.catch(() => []);
-      if (!row) {
+      if (!updated) {
         const [existing] = await this.sql`
           SELECT name, stock FROM products WHERE id = ${productId}`;
         // Untracked (NULL) or missing products are skipped, not failed.
         if (!existing || existing.stock == null) continue;
         const failedName = existing.name;
-        for (const d of done) {
-          await this.sql`
-            UPDATE products SET stock = stock + ${d.quantity}
-            WHERE id = ${d.productId}`;
-        }
+        await this.reverseStock(done);
         return failedName;
       }
-      done.push({ productId, quantity });
+      done.push({ productId, size, quantity });
     }
     return null;
+  }
+
+  /** Adds reserved units back after a failed multi-item reservation. */
+  private async reverseStock(
+    done: { productId: string; size?: string; quantity: number }[],
+  ): Promise<void> {
+    for (const d of done) {
+      if (d.size != null) {
+        const [row] = await this.sql`
+          SELECT stock_by_size FROM products WHERE id = ${d.productId}`;
+        if (!row || row.stock_by_size == null) continue;
+        try {
+          const map = JSON.parse(row.stock_by_size) as Record<string, number>;
+          map[d.size] = (map[d.size] ?? 0) + d.quantity;
+          await this.sql`
+            UPDATE products SET stock_by_size = ${JSON.stringify(map)}, updated_at = now()
+            WHERE id = ${d.productId}`;
+        } catch {
+          // ignore malformed JSON — nothing sensible to restore
+        }
+      } else {
+        await this.sql`
+          UPDATE products SET stock = stock + ${d.quantity}
+          WHERE id = ${d.productId}`;
+      }
+    }
   }
 
   async deleteProduct(id: string): Promise<boolean> {

@@ -24,6 +24,11 @@ export type Product = {
    * product (always sellable); 0 means sold out.
    */
   stock?: number | null;
+  /**
+   * Units on hand per size (e.g. {"S": 5, "M": 3}). null/undefined means
+   * per-size tracking is not enabled — the storefront falls back to `stock`.
+   */
+  stockBySize?: Record<string, number> | null;
   details: string[];
 };
 

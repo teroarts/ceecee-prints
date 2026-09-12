@@ -63,6 +63,26 @@ export class MemoryStorage implements IStorage {
     return updated;
   }
 
+  async markOwnerNotified(
+    orderNumber: string,
+  ): Promise<OrderRecord | undefined> {
+    const existing = this.orders.get(orderNumber);
+    if (!existing || existing.ownerNotifiedAt) return undefined;
+    const updated = { ...existing, ownerNotifiedAt: new Date().toISOString() };
+    this.orders.set(orderNumber, updated);
+    return updated;
+  }
+
+  async markShippedNotified(
+    orderNumber: string,
+  ): Promise<OrderRecord | undefined> {
+    const existing = this.orders.get(orderNumber);
+    if (!existing || existing.shippedNotifiedAt) return undefined;
+    const updated = { ...existing, shippedNotifiedAt: new Date().toISOString() };
+    this.orders.set(orderNumber, updated);
+    return updated;
+  }
+
   async listProducts(): Promise<Product[]> {
     return [...this.products];
   }
@@ -90,6 +110,7 @@ export class MemoryStorage implements IStorage {
       featured: input.featured,
       inStock: input.inStock,
       stock: input.stock ?? null,
+      stockBySize: input.stockBySize ?? null,
       details: input.details,
       sortOrder: input.sortOrder,
     };
@@ -114,26 +135,57 @@ export class MemoryStorage implements IStorage {
   }
 
   async decrementStock(
-    items: { productId: string; quantity: number }[],
+    items: { productId: string; size?: string; quantity: number }[],
   ): Promise<string | null> {
-    const totals = new Map<string, number>();
-    for (const { productId, quantity } of items) {
-      totals.set(productId, (totals.get(productId) ?? 0) + quantity);
-    }
-    const done: { product: Product; quantity: number }[] = [];
-    for (const [productId, quantity] of Array.from(totals.entries())) {
+    const done: {
+      product: Product;
+      size?: string;
+      quantity: number;
+    }[] = [];
+    for (const { productId, size, quantity } of items) {
       const product = this.products.find((p) => p.id === productId);
       if (!product) continue;
-      if (product.stock == null || product.stock < quantity) {
-        for (const d of done) {
-          d.product.stock = (d.product.stock ?? 0) + d.quantity;
+      if (product.stockBySize != null) {
+        const available = product.stockBySize[size ?? ""] ?? 0;
+        if (quantity > 0 && available < quantity) {
+          this.reverseMemoryStock(done);
+          return product.name;
         }
+        product.stockBySize = {
+          ...product.stockBySize,
+          [size ?? ""]: available - quantity,
+        };
+        done.push({ product, size, quantity });
+        continue;
+      }
+      if (
+        product.stock != null &&
+        (quantity > 0 ? product.stock < quantity : false)
+      ) {
+        this.reverseMemoryStock(done);
         return product.name;
       }
-      product.stock -= quantity;
-      done.push({ product, quantity });
+      if (product.stock != null) {
+        product.stock -= quantity;
+        done.push({ product, size: undefined, quantity });
+      }
     }
     return null;
+  }
+
+  private reverseMemoryStock(
+    done: { product: Product; size?: string; quantity: number }[],
+  ): void {
+    for (const d of done) {
+      if (d.size != null && d.product.stockBySize != null) {
+        d.product.stockBySize = {
+          ...d.product.stockBySize,
+          [d.size]: (d.product.stockBySize[d.size] ?? 0) + d.quantity,
+        };
+      } else if (d.product.stock != null) {
+        d.product.stock += d.quantity;
+      }
+    }
   }
 
   async deleteProduct(id: string): Promise<boolean> {

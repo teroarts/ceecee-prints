@@ -18,6 +18,7 @@ import CheckoutSuccess from "@/pages/checkout-success";
 import OrderConfirmation from "@/pages/order-confirmation";
 import About from "@/pages/about";
 import Contact from "@/pages/contact";
+import Track from "@/pages/track";
 import NotFound from "@/pages/not-found";
 import AdminLogin from "@/pages/admin/login";
 import AdminDashboard from "@/pages/admin/dashboard";
@@ -84,6 +85,7 @@ function AppShell() {
           <Route path="/order/:orderNumber" component={OrderConfirmation} />
           <Route path="/about" component={About} />
           <Route path="/contact" component={Contact} />
+          <Route path="/track" component={Track} />
           <Route component={NotFound} />
         </Switch>
       </div>

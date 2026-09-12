@@ -25,6 +25,9 @@ export const products = pgTable("products", {
   inStock: boolean("in_stock").notNull().default(true),
   /** Units on hand; null = stock not tracked */
   stock: integer("stock"),
+  /** JSON-encoded map of size -> units on hand (e.g. {"S":5,"M":3});
+   * null = per-size tracking not enabled (falls back to `stock`) */
+  stockBySize: text("stock_by_size"),
   /** JSON-encoded array of detail bullet strings */
   details: text("details").notNull(),
   sortOrder: integer("sort_order").notNull().default(0),
@@ -51,8 +54,16 @@ export const orders = pgTable("orders", {
   subtotal: integer("subtotal").notNull(),
   shipping: integer("shipping").notNull(),
   total: integer("total").notNull(),
-  /** pending | fulfilled | cancelled */
+  /** pending | processing | shipped | delivered | fulfilled | cancelled */
   orderStatus: text("order_status").notNull().default("pending"),
+  /** Carrier name, set from the admin dashboard when shipping */
+  carrier: text("carrier"),
+  /** Tracking number, shown to the customer on the tracking page */
+  trackingNumber: text("tracking_number"),
+  /** When the store-owner notification email was sent (idempotency guard) */
+  ownerNotifiedAt: timestamp("owner_notified_at", { withTimezone: true }),
+  /** When the customer shipped-confirmation email was sent (idempotency guard) */
+  shippedNotifiedAt: timestamp("shipped_notified_at", { withTimezone: true }),
   /** Stripe Checkout session that paid for this order (nullable) */
   stripeSessionId: text("stripe_session_id").unique(),
   /** unpaid | paid | refunded */
@@ -84,6 +95,10 @@ export const productInputSchema = z.object({
     .int()
     .min(0)
     .max(1_000_000)
+    .nullable()
+    .optional(),
+  stockBySize: z
+    .record(z.string().min(1).max(10), z.number().int().min(0).max(1_000_000))
     .nullable()
     .optional(),
   details: z.array(z.string().min(1)).default(TEE_DETAILS),

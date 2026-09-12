@@ -57,6 +57,11 @@ export function Footer() {
               </Link>
             </li>
             <li>
+              <Link href="/track" className="transition-colors hover:text-foreground">
+                Track your order
+              </Link>
+            </li>
+            <li>
               <Link href="/cart" className="transition-colors hover:text-foreground">
                 Cart
               </Link>

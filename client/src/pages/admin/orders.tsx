@@ -1,6 +1,9 @@
 import { Fragment, useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Package, Truck } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -36,19 +39,39 @@ type Order = {
   subtotal: number;
   shipping: number;
   total: number;
-  orderStatus: "pending" | "fulfilled" | "cancelled";
+  orderStatus:
+    | "pending"
+    | "processing"
+    | "shipped"
+    | "delivered"
+    | "fulfilled"
+    | "cancelled";
   paymentStatus: "unpaid" | "paid" | "refunded";
+  carrier?: string | null;
+  trackingNumber?: string | null;
   createdAt: string;
 };
 
-const ORDER_STATUSES = ["pending", "fulfilled", "cancelled"] as const;
+const ORDER_STATUSES = [
+  "pending",
+  "processing",
+  "shipped",
+  "delivered",
+  "fulfilled",
+  "cancelled",
+] as const;
 const PAYMENT_STATUSES = ["unpaid", "paid", "refunded"] as const;
+
+const CARRIERS = ["USPS", "UPS", "FedEx", "DHL"];
 
 function statusBadgeClass(status: string): string {
   switch (status) {
     case "fulfilled":
+    case "delivered":
     case "paid":
       return "bg-brand-green text-brand-green-foreground";
+    case "shipped":
+      return "bg-blue-600 text-white";
     case "cancelled":
     case "refunded":
       return "bg-red-600 text-white";
@@ -64,6 +87,25 @@ export default function AdminOrders() {
 
   const queryClient = useQueryClient();
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [tracking, setTracking] = useState<{
+    orderNumber: string;
+    carrier: string;
+    trackingNumber: string;
+  } | null>(null);
+
+  const openOrder = (order: Order) => {
+    if (expanded === order.orderNumber) {
+      setExpanded(null);
+      setTracking(null);
+    } else {
+      setExpanded(order.orderNumber);
+      setTracking({
+        orderNumber: order.orderNumber,
+        carrier: order.carrier ?? "",
+        trackingNumber: order.trackingNumber ?? "",
+      });
+    }
+  };
 
   const { data: orders, isLoading } = useQuery<Order[]>({
     queryKey: ["/api/admin/orders"],
@@ -87,6 +129,32 @@ export default function AdminOrders() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+    },
+  });
+
+  const saveTracking = useMutation({
+    mutationFn: async (input: {
+      orderNumber: string;
+      carrier: string;
+      trackingNumber: string;
+    }) => {
+      const res = await apiRequest(
+        "PATCH",
+        `/api/admin/orders/${input.orderNumber}`,
+        {
+          carrier: input.carrier.trim() || null,
+          trackingNumber: input.trackingNumber.trim() || null,
+        },
+      );
+      return res.json();
+    },
+    onSuccess: (updated: Order) => {
+      setTracking({
+        orderNumber: updated.orderNumber,
+        carrier: updated.carrier ?? "",
+        trackingNumber: updated.trackingNumber ?? "",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
     },
   });
 
@@ -152,7 +220,7 @@ export default function AdminOrders() {
                           type="button"
                           aria-label={isOpen ? "Collapse order" : "Expand order"}
                           aria-expanded={isOpen}
-                          onClick={() => setExpanded(isOpen ? null : order.orderNumber)}
+                          onClick={() => openOrder(order)}
                           className="rounded p-1 text-muted-foreground hover:bg-muted"
                           data-testid={`button-expand-${order.orderNumber}`}
                         >
@@ -234,6 +302,7 @@ export default function AdminOrders() {
                       <tr className="border-b border-border/60 bg-muted/30">
                         <td colSpan={7} className="px-6 py-4">
                           <div className="grid gap-6 md:grid-cols-2">
+                            <div className="space-y-6">
                             <div>
                               <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                                 Items
@@ -259,6 +328,83 @@ export default function AdminOrders() {
                                 Subtotal {formatPrice(order.subtotal)} · Shipping{" "}
                                 {order.shipping === 0 ? "Free" : formatPrice(order.shipping)}
                               </p>
+                            </div>
+
+                            <div className="rounded-lg border border-border bg-card p-4">
+                              <h3 className="mb-3 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                <Truck className="h-3.5 w-3.5" aria-hidden /> Shipping
+                                & tracking
+                              </h3>
+                              <div className="grid gap-3 sm:grid-cols-2">
+                                <div className="space-y-1.5">
+                                  <Label
+                                    htmlFor={`carrier-${order.orderNumber}`}
+                                    className="text-xs"
+                                  >
+                                    Carrier
+                                  </Label>
+                                  <Input
+                                    id={`carrier-${order.orderNumber}`}
+                                    value={tracking?.carrier ?? ""}
+                                    onChange={(e) =>
+                                      setTracking((t) =>
+                                        t ? { ...t, carrier: e.target.value } : t,
+                                      )
+                                    }
+                                    placeholder="USPS, UPS, FedEx…"
+                                    className="h-8 text-sm"
+                                  />
+                                </div>
+                                <div className="space-y-1.5">
+                                  <Label
+                                    htmlFor={`tracking-${order.orderNumber}`}
+                                    className="text-xs"
+                                  >
+                                    Tracking number
+                                  </Label>
+                                  <Input
+                                    id={`tracking-${order.orderNumber}`}
+                                    value={tracking?.trackingNumber ?? ""}
+                                    onChange={(e) =>
+                                      setTracking((t) =>
+                                        t
+                                          ? { ...t, trackingNumber: e.target.value }
+                                          : t,
+                                      )
+                                    }
+                                    placeholder="e.g. 9400111899…"
+                                    className="h-8 font-mono text-sm"
+                                  />
+                                </div>
+                              </div>
+                              <div className="mt-3 flex items-center justify-between gap-3">
+                                <p className="text-xs text-muted-foreground">
+                                  {order.orderStatus === "shipped" ? (
+                                    <span className="inline-flex items-center gap-1">
+                                      <Package className="h-3 w-3" aria-hidden /> Customer
+                                      emailed when marked shipped
+                                    </span>
+                                  ) : (
+                                    "Save tracking before marking shipped so the email includes it."
+                                  )}
+                                </p>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={
+                                    !tracking ||
+                                    saveTracking.isPending ||
+                                    (tracking.carrier === (order.carrier ?? "") &&
+                                      tracking.trackingNumber ===
+                                        (order.trackingNumber ?? ""))
+                                  }
+                                  onClick={() => tracking && saveTracking.mutate(tracking)}
+                                  data-testid={`button-save-tracking-${order.orderNumber}`}
+                                >
+                                  {saveTracking.isPending ? "Saving…" : "Save tracking"}
+                                </Button>
+                              </div>
+                            </div>
                             </div>
                             <div>
                               <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">

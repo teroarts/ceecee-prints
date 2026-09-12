@@ -14,6 +14,9 @@ type OrderResponse = {
   subtotal: number;
   shipping: number;
   total: number;
+  orderStatus?: string;
+  carrier?: string | null;
+  trackingNumber?: string | null;
 };
 
 type OrderItem = {
@@ -90,6 +93,25 @@ export default function OrderConfirmation() {
           {order.orderNumber}
         </p>
       </div>
+
+      {order.carrier && (
+        <p className="mt-3 text-center text-sm text-muted-foreground">
+          Shipping via {order.carrier}
+          {order.trackingNumber && (
+            <>
+              {" "}— tracking{" "}
+              <span className="font-mono">{order.trackingNumber}</span>
+            </>
+          )}{" "}
+          ·{" "}
+          <Link
+            href="/track"
+            className="font-medium text-foreground underline underline-offset-4"
+          >
+            Track your order
+          </Link>
+        </p>
+      )}
 
       <section aria-label="Order details" className="mt-10 rounded-lg border border-card-border bg-card p-6">
         <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">

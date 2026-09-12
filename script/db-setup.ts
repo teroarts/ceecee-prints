@@ -63,6 +63,11 @@ async function main() {
   await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS stripe_session_id text`;
   await sql`CREATE UNIQUE INDEX IF NOT EXISTS orders_stripe_session_id_key ON orders (stripe_session_id)`;
   await sql`ALTER TABLE products ADD COLUMN IF NOT EXISTS stock integer`;
+  await sql`ALTER TABLE products ADD COLUMN IF NOT EXISTS stock_by_size text`;
+  await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS carrier text`;
+  await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_number text`;
+  await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS owner_notified_at timestamptz`;
+  await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS shipped_notified_at timestamptz`;
 
   const existing = await sql`SELECT count(*)::int AS n FROM products`;
   if (existing[0].n === 0) {

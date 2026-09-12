@@ -71,9 +71,9 @@ export default function CheckoutSuccess() {
             If you were charged, your order is safe — email{" "}
             <a
               className="underline"
-              href="mailto:info@ceeceeprints.com"
+              href="mailto:printsbyceecee@gmail.com"
             >
-              info@ceeceeprints.com
+              printsbyceecee@gmail.com
             </a>{" "}
             and we'll sort it out.
           </p>
@@ -114,6 +114,12 @@ export default function CheckoutSuccess() {
               className="inline-flex h-11 items-center rounded-md bg-primary px-6 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
             >
               View order
+            </Link>
+            <Link
+              href="/track"
+              className="inline-flex h-11 items-center rounded-md border border-border px-6 text-sm font-semibold transition-colors hover:bg-muted"
+            >
+              Track your order
             </Link>
             <Link
               href="/shop"

@@ -79,13 +79,13 @@ export default function AdminDashboard() {
     {
       label: "Orders",
       value: String(stats.orderCount),
-      hint: `${stats.fulfilledCount} fulfilled · ${stats.cancelledCount} cancelled`,
+      hint: `${stats.fulfilledCount} completed · ${stats.cancelledCount} cancelled`,
       icon: ShoppingCart,
     },
     {
       label: "Awaiting fulfilment",
       value: String(stats.pendingCount),
-      hint: "Pending orders",
+      hint: "Pending or being prepared",
       icon: Clock,
     },
     {
