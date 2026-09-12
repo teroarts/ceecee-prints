@@ -133,10 +133,14 @@ export default function Contact() {
             <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
               Email
             </h2>
-            <p className="flex items-center gap-2 text-sm">
+            <a
+              href="mailto:printsbyceecee@gmail.com"
+              className="flex items-center gap-2 text-sm transition-colors hover:text-brand-red"
+              data-testid="link-contact-email"
+            >
               <Mail className="h-4 w-4 shrink-0 text-primary" aria-hidden />
               printsbyceecee@gmail.com
-            </p>
+            </a>
           </div>
           <div>
             <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
