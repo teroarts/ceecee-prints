@@ -117,7 +117,7 @@ export default function Home() {
             <p className="mt-4 text-base leading-relaxed text-muted-foreground">
               CeeCee Prints began with a simple idea: the designs we wear
               should say something true. Each graphic is drawn from the flag,
-              the land and the pride of where we come from — then printed by
+              the land and the pride of where we come from then printed by
               hand in small batches on cotton that gets softer with every wash.
             </p>
             <ul className="mt-6 space-y-3 text-sm">
