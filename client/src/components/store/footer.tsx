@@ -16,7 +16,7 @@ export function Footer() {
             </span>
           </div>
           <p className="max-w-xs text-sm text-muted-foreground">
-            Kenyan stories, printed with pride — heritage graphic tees on
+            Kenyan heritage stories & graphic tees printed with pride on
             premium cotton.
           </p>
         </div>
