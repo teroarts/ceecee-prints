@@ -36,7 +36,7 @@ export default function Home() {
               Wear your <span className="italic text-brand-red">heritage.</span>
             </h1>
             <p className="mt-5 max-w-md text-base leading-relaxed text-muted-foreground">
-              Bold Kenyan stories: maps, lions, flags and farm pride printed
+              Bold Kenyan stories : maps, lions, flags and farm pride printed
               on premium cotton tees, made to be worn everywhere from Nairobi
               to wherever home is.
             </p>
